@@ -30,6 +30,19 @@
 
 using namespace std;
 
+
+/* Note
+ A fragment shader is the same as pixel shader.
+ 
+ One main difference is that a vertex shader can manipulate the attributes of vertices. which are the corner points of your polygons.
+ 
+ The fragment shader on the other hand takes care of how the pixels between the vertices look. They are interpolated between the defined vertices following specific rules.
+ 
+ Vertex shader is done on every vertex, while fragment shader is done on every pixel. The fragment shader is applied after vertex shader
+ 
+ 
+ */
+
 // Shader attributes
 GLint iLocPosition;
 GLint iLocColor;
@@ -181,6 +194,8 @@ void loadOBJModel()
 
 // [check]
 //Uniform variables are used to communicate with your vertex or fragment shader from "outside"
+//refer to https://www.opengl.org/sdk/docs/tutorials/ClockworkCoders/uniform.php
+
 void setColorMode()
 {
 	if (color_mode == 0)
@@ -294,6 +309,7 @@ void setShaders()
 }
 
 // [check]
+//mouse function
 void onMouse(int who, int state, int x, int y)
 {
 	printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
@@ -318,6 +334,7 @@ void onMouse(int who, int state, int x, int y)
 }
 
 // [check]
+//mouse location
 void onMouseMotion(int x, int y)
 {
 	printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
@@ -353,7 +370,7 @@ void onKeyboard(unsigned char key, int x, int y)
 }
 
 // [check]
-//right left 
+//right left
 void onKeyboardSpecial(int key, int x, int y) {
 	printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
 	switch (key)
