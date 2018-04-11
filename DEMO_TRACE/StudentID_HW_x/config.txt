@@ -1,0 +1,3 @@
+../../../ColorModels/bunny5KC.obj
+../../../ColorModels/blitzcrank_incognito.obj
+../../../ColorModels/ziggs.obj
