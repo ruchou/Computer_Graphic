@@ -165,6 +165,9 @@ void traverseColorModel(model &m)
 }
 
 // [check]
+//load the model
+//That is, the three demo model
+//glm Wavefront OBJ model file format reader/writer/manipulator
 void loadOBJModel()
 {
 	models = new model[filenames.size()];
@@ -177,6 +180,7 @@ void loadOBJModel()
 }
 
 // [check]
+//Uniform variables are used to communicate with your vertex or fragment shader from "outside"
 void setColorMode()
 {
 	if (color_mode == 0)
@@ -203,6 +207,7 @@ void onIdle()
 }
 
 // [check]
+//set to 'display' the model
 void onDisplay(void)
 {
 	// clear canvas
@@ -348,6 +353,7 @@ void onKeyboard(unsigned char key, int x, int y)
 }
 
 // [check]
+//right left 
 void onKeyboardSpecial(int key, int x, int y) {
 	printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
 	switch (key)
@@ -373,6 +379,7 @@ void onWindowReshape(int width, int height)
 }
 
 // [check]
+//load the configuare file that contains obj location
 void loadConfigFile()
 {
 	ifstream fin;
@@ -422,6 +429,8 @@ int main(int argc, char **argv)
 	loadOBJModel();
 
 	// register glut callback functions
+    //glut stands for openGL utility tool
+    //for windows application
 	glutDisplayFunc(onDisplay);
 	glutIdleFunc(onIdle);
 	glutKeyboardFunc(onKeyboard);
