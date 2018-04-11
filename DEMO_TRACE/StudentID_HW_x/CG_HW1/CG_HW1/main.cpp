@@ -174,7 +174,8 @@ void traverseColorModel(model &m)
 		m.vertices[3 * i + 0] = 2.0*((m.vertices[3 * i + 0] - meanVal[0]) / scale);
 		m.vertices[3 * i + 1] = 2.0*((m.vertices[3 * i + 1] - meanVal[1]) / scale);
 		m.vertices[3 * i + 2] = 2.0*((m.vertices[3 * i + 2] - meanVal[2]) / scale);
-	}
+        // 2 
+    }
 }
 
 // [check]
