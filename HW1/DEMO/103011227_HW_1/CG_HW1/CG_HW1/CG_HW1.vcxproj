@@ -13,11 +13,14 @@
   <ItemGroup>
     <ClCompile Include="glm.c" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Matrices.cpp" />
     <ClCompile Include="textfile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="glm.h" />
+    <ClInclude Include="Matrices.h" />
     <ClInclude Include="textfile.h" />
+    <ClInclude Include="Vectors.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shader.frag" />

@@ -24,12 +24,21 @@
     <ClCompile Include="glm.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Matrices.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="textfile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="glm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Matrices.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Vectors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

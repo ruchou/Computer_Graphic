@@ -11,6 +11,8 @@
 #include "textfile.h"
 #include "glm.h"
 
+#include "Matrices.h"
+
 #pragma comment (lib, "glew32.lib")
 #pragma comment (lib, "freeglut.lib")
 
@@ -34,6 +36,7 @@ using namespace std;
 GLint iLocPosition;
 GLint iLocColor;
 GLint iLocFilter;
+GLint iLocMVP;
 
 struct model
 {
@@ -47,6 +50,32 @@ vector<string> filenames; // .obj filename list
 int cur_idx = 0; // represent which model should be rendered now
 int color_mode = 0;
 bool use_wire_mode = false;
+
+
+//base
+Matrix4 FloorN = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // normalization matrix for the floor
+
+//M=T*S*R*N
+//T = Model translation
+Matrix4 T = Matrix4(
+	1, 0, 0, 0,
+	0, 1, 0, 0,
+	0, 0, 1, 0,
+	0, 0, 0, 1);
+//S=scaling rotation
+Matrix4 S = Matrix4(
+	1, 0, 0, 0,
+	0, 1, 0, 0,
+	0, 0, 1, 0,
+	0, 0, 0, 1);
+
+//R=Model rotation
+Matrix4 R = Matrix4(
+	1, 0, 0, 0,
+	0, 1, 0, 0,
+	0, 0, 1, 0,
+	0, 0, 0, 1);
+
 
 // [check]
 void traverseColorModel(model &m)
@@ -205,6 +234,8 @@ void onIdle()
 // [check]
 void onDisplay(void)
 {
+
+
 	// clear canvas
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);	// clear canvas to color(0,0,0)->black
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -212,15 +243,53 @@ void onDisplay(void)
 	glEnableVertexAttribArray(iLocPosition);
 	glEnableVertexAttribArray(iLocColor);
 
+	Matrix4 M = Matrix4(
+						1, 0, 0, -0.5,
+						0, 1, 0, 1,
+						0, 0, 0, 0,
+						0, 0, 0, 1);
+	Matrix4 V = Matrix4(
+		1, 0, 0, 1,
+		0, 1, 0, 1,
+		0, 0, 1, 0,
+		0, 0, 0, 1);
+	Matrix4 P= Matrix4(
+		1, 0, 0, 0,
+		0, 1, 0, 1,
+		0, 0, -1, 0,
+		0, 0, 0, 0);
+	Matrix4 MVP = P*V*M;
+	std::cout << MVP << std::endl;
+
+	GLfloat mvp[16];
+
+
+	// row-major ---> column-major
+	mvp[0] = MVP[0];  mvp[4] = MVP[1];   mvp[8] = MVP[2];    mvp[12] = MVP[3];
+	mvp[1] = MVP[4];  mvp[5] = MVP[5];   mvp[9] = MVP[6];    mvp[13] = MVP[7];
+	mvp[2] = MVP[8];  mvp[6] = MVP[9];   mvp[10] = MVP[10];   mvp[14] = MVP[11];
+	mvp[3] = MVP[12]; mvp[7] = MVP[13];  mvp[11] = MVP[14];   mvp[15] = MVP[15];
+
+
+
 	// assign corresponding color filter to fragment shader (shader.frag)
 	setColorMode();
 
 	// bind array pointers to shader    3->stride              0->start_index
 	glVertexAttribPointer(iLocPosition, 3, GL_FLOAT, GL_FALSE, 0, models[cur_idx].vertices);
 	glVertexAttribPointer(iLocColor, 3, GL_FLOAT, GL_FALSE, 0, models[cur_idx].colors);
+	
+	// bind uniform matrix to shader
+	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, mvp);
 
 	// draw the array we just bound
 	glDrawArrays(GL_TRIANGLES, 0, models[cur_idx].obj->numtriangles * 3);
+
+	
+
+
+
+
 
 	glutSwapBuffers();
 }
@@ -284,7 +353,7 @@ void setShaders()
 
 	iLocPosition = glGetAttribLocation(p, "av4position");
 	iLocColor = glGetAttribLocation(p, "av3color");
-
+	iLocMVP = glGetUniformLocation(p, "mvp");
 	glUseProgram(p);
 }
 

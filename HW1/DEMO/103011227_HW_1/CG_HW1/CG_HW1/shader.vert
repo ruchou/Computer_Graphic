@@ -3,6 +3,9 @@ attribute vec3 av3color;
 
 varying vec3 vv3color;
 uniform vec3 filter;
+uniform mat4 mvp;
+
+
 
 void main() {
 	// NOTE!! column major
