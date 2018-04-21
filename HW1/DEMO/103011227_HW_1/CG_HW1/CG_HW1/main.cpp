@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <cmath>
 
 #include <GL/glew.h>
 #include <freeglut/glut.h>
@@ -58,16 +59,18 @@ Matrix4 FloorN = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // nor
 //M=T*S*R*N
 //T = Model translation
 Matrix4 T = Matrix4(
-	1, 0, 0, 0,
+	1, 0, 0, -0.5,
 	0, 1, 0, 0,
 	0, 0, 1, 0,
 	0, 0, 0, 1);
+Matrix4 T_prev = T;
 //S=scaling rotation
 Matrix4 S = Matrix4(
 	1, 0, 0, 0,
 	0, 1, 0, 0,
 	0, 0, 1, 0,
 	0, 0, 0, 1);
+Matrix4 S_prev = S;
 
 //R=Model rotation
 Matrix4 R = Matrix4(
@@ -75,6 +78,42 @@ Matrix4 R = Matrix4(
 	0, 1, 0, 0,
 	0, 0, 1, 0,
 	0, 0, 0, 1);
+Matrix4 R_prev = R;
+
+Matrix4 N = Matrix4(
+	1, 0, 0, 0,
+	0, 1, 0, 0,
+	0, 0, 1, 0,
+	0, 0, 0, 1
+);
+
+Vector3 eye_pos = Vector3(0, 0, 2);
+Vector3 eye_pos_prev = eye_pos;
+
+Vector3 center_pos = Vector3(0, 0, 0);
+Vector3 center_pos_prev = center_pos;
+
+Vector3 up_vec = Vector3(0, 1, 0);
+
+float xmin = -1.0, xmax = 1.0, ymin = -1.0, ymax = 1.0, znear = 1.0, zfar = 3.0; // zfar\znear should be positive
+float xmin0 = -1.0, xmax0 = 1.0, ymin0 = -1.0, ymax0 = 1.0, znear0 = 1.0, zfar0 = 3.0;
+
+int mouseX=0;
+int mouseY=0;
+
+bool isLeftMousePress = false;
+
+typedef enum {
+	object_translation,
+	object_rotation,
+	object_scaling,
+	
+}instruction_mode;
+
+instruction_mode Intruction_Mode;
+
+int current_instruction_mode=object_scaling; //defaul translation
+
 
 
 // [check]
@@ -242,24 +281,22 @@ void onDisplay(void)
 
 	glEnableVertexAttribArray(iLocPosition);
 	glEnableVertexAttribArray(iLocColor);
+	//M=T*S*R*N defined in the global 
 
-	Matrix4 M = Matrix4(
-						1, 0, 0, -0.5,
-						0, 1, 0, 1,
-						0, 0, 0, 0,
-						0, 0, 0, 1);
+	Matrix4 M = T*S*R*N;
+
 	Matrix4 V = Matrix4(
-		1, 0, 0, 1,
-		0, 1, 0, 1,
+		1, 0, 0, 0,
+		0, 1, 0, 0,
 		0, 0, 1, 0,
 		0, 0, 0, 1);
 	Matrix4 P= Matrix4(
 		1, 0, 0, 0,
-		0, 1, 0, 1,
+		0, 1, 0, 0,
 		0, 0, -1, 0,
-		0, 0, 0, 0);
+		0, 0, 0, 1);
 	Matrix4 MVP = P*V*M;
-	std::cout << MVP << std::endl;
+	//std::cout << MVP << std::endl;
 
 	GLfloat mvp[16];
 
@@ -358,33 +395,112 @@ void setShaders()
 }
 
 // [check]
+//on mouse click 
 void onMouse(int who, int state, int x, int y)
 {
 	printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
 
 	switch (who)
 	{
+
 	case GLUT_LEFT_BUTTON:   printf("left button   "); break;
 	case GLUT_MIDDLE_BUTTON: printf("middle button "); break;
 	case GLUT_RIGHT_BUTTON:  printf("right button  "); break;
-	case GLUT_WHEEL_UP:      printf("wheel up      "); break;
-	case GLUT_WHEEL_DOWN:    printf("wheel down    "); break;
+	case GLUT_WHEEL_UP:      printf("wheel up      ");
+		//scaling
+		break;
+	case GLUT_WHEEL_DOWN:    printf("wheel down    ");
+		//scaling
+		break;
+
 	default:                 printf("0x%02X          ", who); break;
 	}
 
 	switch (state)
 	{
-	case GLUT_DOWN: printf("start "); break;
-	case GLUT_UP:   printf("end   "); break;
+	case GLUT_DOWN: printf("start ");
+		mouseX = x;
+		mouseY = y;
+		if (who == GLUT_LEFT_BUTTON) {
+			isLeftMousePress = true;
+		}
+		else
+		{
+			isLeftMousePress = false;
+		}
+		break;
+	case GLUT_UP:   printf("end   ");
+		T_prev = T;
+		S_prev = S;
+		R_prev = R;
+		eye_pos_prev = eye_pos;
+		center_pos_prev = center_pos;
+		xmax0 = xmax;
+		xmin0 = xmin;
+		ymax0 = ymax;
+		ymin0 = ymin;
+		zfar0 = zfar;
+		znear0 = znear;
+		
+		
+		break;
 	}
 
 	printf("\n");
 }
 
 // [check]
+// mouse movement 
 void onMouseMotion(int x, int y)
 {
 	printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
+	float offset_X = (float)(x - mouseX) * 2 / 800; // windows width and height is 800
+	float offset_Y = (float)(y - mouseY) * 2 / 800;
+
+	if (current_instruction_mode == object_translation) {
+		//model translation
+
+		T = Matrix4(
+			1, 0, 0, offset_X,
+			0, 1, 0, -offset_Y,// -y is more human friendly
+			0, 0, 1, 0,
+			0, 0, 0, 1
+		)*T_prev;
+	}
+	else if (current_instruction_mode==object_rotation)
+	{
+		Matrix4 RX = Matrix4(
+			1, 0, 0, 0,
+			0, cos(offset_Y), -sin(offset_Y), 0,
+			0, sin(offset_Y), cos(offset_Y), 0,
+			0, 0, 0, 1
+		);
+		Matrix4 RY = Matrix4(
+			cos(offset_X), 0, sin(offset_X), 0,
+			0, 1, 0, 0,
+			-sin(offset_X), 0, cos(offset_X), 0,
+			0, 0, 0, 1
+		);
+		R = RX*RY*R_prev;
+
+
+	}
+	else if (current_instruction_mode==object_scaling)
+	{
+		S = Matrix4(
+			1 + offset_X, 0, 0, 0,
+			0, 1 + offset_Y, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+		)*S_prev;
+	}
+
+
+
+
+
+
+
 }
 
 // [check]
@@ -411,6 +527,18 @@ void onKeyboard(unsigned char key, int x, int y)
 		break;
 	case 'c':
 		color_mode = (color_mode + 1) % 4;
+		break;
+	case 't':
+		std::cout << "T press" << std::endl << "Object Translation Mode" << std::endl;
+		current_instruction_mode = object_translation;
+		break;
+	case 'r':
+		std::cout << "R press" << std::endl << "Object Rotation Mode" << std::endl;
+		current_instruction_mode = object_rotation;
+		break;
+	case 's':
+		std::cout << "S press" << std::endl << "Object Scaling Mode" << std::endl;
+		current_instruction_mode = object_scaling;
 		break;
 	}
 	printf("\n");
