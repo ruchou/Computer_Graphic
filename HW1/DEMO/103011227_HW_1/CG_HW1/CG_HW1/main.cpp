@@ -33,6 +33,11 @@
 
 using namespace std;
 
+void makeWorld() {
+
+}
+
+
 // Shader attributes
 GLint iLocPosition;
 GLint iLocColor;
@@ -51,6 +56,8 @@ vector<string> filenames; // .obj filename list
 int cur_idx = 0; // represent which model should be rendered now
 int color_mode = 0;
 bool use_wire_mode = false;
+
+model* world;
 
 
 //base
@@ -147,6 +154,9 @@ Matrix4 getPerspectiveNormalizeionMatrix() {
 		0, 0, -1, 0
 	);
 }
+
+
+
 
 
 
@@ -266,6 +276,114 @@ void traverseColorModel(model &m)
 	}
 }
 
+void traverseWorldColorModel(model &m) {
+	GLfloat maxVal[3];
+	GLfloat minVal[3];
+
+	m.vertices = new GLfloat[m.obj->numtriangles * 9];
+	m.colors = new GLfloat[m.obj->numtriangles * 9];
+
+	// The center position of the model 
+	m.obj->position[0] = 0;
+	m.obj->position[1] = 0;
+	m.obj->position[2] = 0;
+
+	//printf("#triangles: %d\n", m.obj->numtriangles);
+
+	for (int i = 0; i < (int)m.obj->numtriangles; i++)
+	{
+		// the index of each vertex
+		int indv1 = m.obj->triangles[i].vindices[0];
+		int indv2 = m.obj->triangles[i].vindices[1];
+		int indv3 = m.obj->triangles[i].vindices[2];
+
+		// the index of each color
+		int indc1 = indv1;
+		int indc2 = indv2;
+		int indc3 = indv3;
+
+		// assign vertices
+		GLfloat vx, vy, vz;
+		vx = m.obj->vertices[indv1 * 3 + 0];
+		vy = m.obj->vertices[indv1 * 3 + 1];
+		vz = m.obj->vertices[indv1 * 3 + 2];
+
+		m.vertices[i * 9 + 0] = vx;
+		m.vertices[i * 9 + 1] = vy;
+		m.vertices[i * 9 + 2] = vz;
+
+		vx = m.obj->vertices[indv2 * 3 + 0];
+		vy = m.obj->vertices[indv2 * 3 + 1];
+		vz = m.obj->vertices[indv2 * 3 + 2];
+
+		m.vertices[i * 9 + 3] = vx;
+		m.vertices[i * 9 + 4] = vy;
+		m.vertices[i * 9 + 5] = vz;
+
+		vx = m.obj->vertices[indv3 * 3 + 0];
+		vy = m.obj->vertices[indv3 * 3 + 1];
+		vz = m.obj->vertices[indv3 * 3 + 2];
+
+		m.vertices[i * 9 + 6] = vx;
+		m.vertices[i * 9 + 7] = vy;
+		m.vertices[i * 9 + 8] = vz;
+
+		// assign colors
+		GLfloat c1, c2, c3;
+		c1 = m.obj->colors[indv1 * 3 + 0];
+		c2 = m.obj->colors[indv1 * 3 + 1];
+		c3 = m.obj->colors[indv1 * 3 + 2];
+
+		m.colors[i * 9 + 0] = c1;
+		m.colors[i * 9 + 1] = c2;
+		m.colors[i * 9 + 2] = c3;
+
+		c1 = m.obj->colors[indv2 * 3 + 0];
+		c2 = m.obj->colors[indv2 * 3 + 1];
+		c3 = m.obj->colors[indv2 * 3 + 2];
+
+		m.colors[i * 9 + 3] = c1;
+		m.colors[i * 9 + 4] = c2;
+		m.colors[i * 9 + 5] = c3;
+
+		c1 = m.obj->colors[indv3 * 3 + 0];
+		c2 = m.obj->colors[indv3 * 3 + 1];
+		c3 = m.obj->colors[indv3 * 3 + 2];
+
+		m.colors[i * 9 + 6] = c1;
+		m.colors[i * 9 + 7] = c2;
+		m.colors[i * 9 + 8] = c3;
+	}
+
+	// Find min and max value
+	GLfloat meanVal[3];
+
+	meanVal[0] = meanVal[1] = meanVal[2] = 0;
+	maxVal[0] = maxVal[1] = maxVal[2] = -10e20;
+	minVal[0] = minVal[1] = minVal[2] = 10e20;
+
+	for (int i = 0; i < m.obj->numtriangles * 3; i++)
+	{
+		maxVal[0] = max(m.vertices[3 * i + 0], maxVal[0]);
+		maxVal[1] = max(m.vertices[3 * i + 1], maxVal[1]);
+		maxVal[2] = max(m.vertices[3 * i + 2], maxVal[2]);
+
+		minVal[0] = min(m.vertices[3 * i + 0], minVal[0]);
+		minVal[1] = min(m.vertices[3 * i + 1], minVal[1]);
+		minVal[2] = min(m.vertices[3 * i + 2], minVal[2]);
+	}
+	GLfloat scale = max(maxVal[0] - minVal[0], maxVal[1] - minVal[1]);
+	scale = max(scale, maxVal[2] - minVal[2]);
+
+	// Calculate mean values
+	for (int i = 0; i < 3; i++)
+	{
+		meanVal[i] = (maxVal[i] + minVal[i]) / 2.0;
+	}
+
+
+
+}
 // [check]
 void loadOBJModel()
 {
@@ -276,6 +394,13 @@ void loadOBJModel()
 		models[idx].obj = glmReadOBJ((char*)filename.c_str());
 		traverseColorModel(models[idx++]);
 	}
+}
+
+void loadOBJWorld() {
+	world = new model();
+	world->obj=glmReadOBJ("../../../ColorModels/boxC.obj");
+	traverseWorldColorModel(*world);
+
 }
 
 // [check]
@@ -401,13 +526,44 @@ void onDisplay(void)
 	// draw the array we just bound
 	glDrawArrays(GL_TRIANGLES, 0, models[cur_idx].obj->numtriangles * 3);
 
-	
+	//glutSwapBuffers();
 
+	//*************************************
+	//floor
 
+	// below are the floors
+	Matrix4 FloorT = Matrix4(
+		1.0, 0, 0, 0,
+		0, 1.0, 0, -1.0,
+		0, 0, 1, 0,
+		0, 0, 0, 1);
+	Matrix4 FloorN = Matrix4(
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1); // normalization matrix for the floor
 
+	MVP = P*V*FloorT*FloorN;// no need to do geometrical transformation for the floor
+
+							// row-major ---> column-major
+	mvp[0] = MVP[0];  mvp[4] = MVP[1];   mvp[8] = MVP[2];    mvp[12] = MVP[3];
+	mvp[1] = MVP[4];  mvp[5] = MVP[5];   mvp[9] = MVP[6];    mvp[13] = MVP[7];
+	mvp[2] = MVP[8];  mvp[6] = MVP[9];   mvp[10] = MVP[10];   mvp[14] = MVP[11];
+	mvp[3] = MVP[12]; mvp[7] = MVP[13];  mvp[11] = MVP[14];   mvp[15] = MVP[15];
+
+	// bind array pointers to shader
+	glVertexAttribPointer(iLocPosition, 3, GL_FLOAT, GL_FALSE, 0, world->vertices);
+	glVertexAttribPointer(iLocColor, 3, GL_FLOAT, GL_FALSE, 0, world->colors);
+
+	// bind uniform matrix to shader
+	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, mvp);
+
+	// draw the array we just bound
+	glDrawArrays(GL_TRIANGLES, 0, world->obj->numtriangles*3);
 
 
 	glutSwapBuffers();
+
 }
 
 void showShaderCompileStatus(GLuint shader, GLint *shaderCompiled)
@@ -803,6 +959,10 @@ int main(int argc, char **argv)
 
 	// load obj models through glm
 	loadOBJModel();
+
+	//loard word file
+	loadOBJWorld();
+
 
 	// register glut callback functions
 	glutDisplayFunc(onDisplay);
