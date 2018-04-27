@@ -84,6 +84,7 @@ typedef enum {
     object_scaling,
     change_eye_pos,
     change_center_pos,
+	change_up_vec
 }instruction_mode;
 instruction_mode Intruction_Mode;
 
@@ -94,6 +95,8 @@ typedef enum {
 }projetion_mode;
 projetion_mode project_Mode;
 
+int current_instruction_mode = object_rotation; //defaul translation
+int current_projection_mode = orthogonal_view;
 
 
 
@@ -101,14 +104,14 @@ projetion_mode project_Mode;
 Matrix4 translate(Vector3 vec)
 {
 	Matrix4 mat;
-	/*
+	
 	mat = Matrix4(
-		?, ?, ?, ?,
-		?, ?, ?, ?,
-		?, ?, ?, ?,
-		?, ?, ?, ?
+		1,0,0,vec[0],
+		0,1,0,vec[1],
+		0,0,1,vec[2],
+		0,0,0,1
 	);
-	*/
+	
 
 	return mat;
 }
@@ -117,14 +120,14 @@ Matrix4 translate(Vector3 vec)
 Matrix4 scaling(Vector3 vec)
 {
 	Matrix4 mat;
-	/*
+	
 	mat = Matrix4(
-	?, ?, ?, ?,
-	?, ?, ?, ?,
-	?, ?, ?, ?,
-	?, ?, ?, ?
+			vec[0], 0, 0, 0,
+			0, vec[1], 0, 0,
+			0, 0,vec[2], 0,
+			0, 0, 0, 1
 	);
-	*/
+	
 
 	return mat;
 }
@@ -133,14 +136,14 @@ Matrix4 scaling(Vector3 vec)
 Matrix4 rotateX(GLfloat val)
 {
 	Matrix4 mat;
-	/*
+	
 	mat = Matrix4(
-	?, ?, ?, ?,
-	?, ?, ?, ?,
-	?, ?, ?, ?,
-	?, ?, ?, ?
+		1, 0, 0, 0,
+		0, cos(val), -sin(val), 0,
+		0, sin(val), cos(val), 0,
+		0, 0, 0, 1
 	);
-	*/
+	
 
 	return mat;
 }
@@ -149,14 +152,14 @@ Matrix4 rotateX(GLfloat val)
 Matrix4 rotateY(GLfloat val)
 {
 	Matrix4 mat;
-	/*
+	
 	mat = Matrix4(
-	?, ?, ?, ?,
-	?, ?, ?, ?,
-	?, ?, ?, ?,
-	?, ?, ?, ?
+		cos(val), 0, sin(val), 0,
+		0, 1, 0, 0,
+		-sin(val), 0, cos(val), 0,
+		0, 0, 0, 1
 	);
-	*/
+	
 
 	return mat;
 }
@@ -165,14 +168,14 @@ Matrix4 rotateY(GLfloat val)
 Matrix4 rotateZ(GLfloat val)
 {
 	Matrix4 mat;
-	/*
+	
 	mat = Matrix4(
-	?, ?, ?, ?,
-	?, ?, ?, ?,
-	?, ?, ?, ?,
-	?, ?, ?, ?
+		cos(val),-sin(val),0,0,
+		sin(val),cos(val),0,0,
+		0,0,1,0,
+		0,0,0,1
 	);
-	*/
+	
 
 	return mat;
 }
@@ -185,40 +188,66 @@ Matrix4 rotate(Vector3 vec)
 // [TODO] compute viewing matrix accroding to the setting of main_camera
 void setViewingMatrix()
 {
-	/*
-	view_matrix = Matrix4(
-		?, ?, ?, ?,
-		?, ?, ?, ?,
-		?, ?, ?, ?,
-		?, ?, ?, ?
+	
+	//viewing matrix transform
+	Vector3 P1P2 = main_camera.center - main_camera.position;
+	Vector3 P1P3 = main_camera.up_vector;
+	Vector3 Rz = -(P1P2.normalize());
+	Vector3 Rx = P1P2.cross(P1P3).normalize();
+	Vector3 Ry = Rz.cross(Rx);
+
+	Matrix4 V_rotation = Matrix4(
+		Rx[0], Rx[1], Rx[2], 0,
+		Ry[0], Ry[1], Ry[2], 0,
+		Rz[0], Rz[1], Rz[2], 0,
+		0, 0, 0, 1
 	);
-	*/
+	Matrix4 V_translate = Matrix4(
+		1, 0, 0, -main_camera.position[0],
+		0, 1, 0, -main_camera.position[1],
+		0, 0, 1, -main_camera.position[2],
+		0, 0, 0, 1
+	);
+
+	view_matrix = V_rotation*V_translate;
+	
+
+	
 }
 
 // [TODO] compute orthogonal projection matrix
 void setOrthogonal()
 {
-	/*
+	
+	
 	project_matrix = Matrix4(
-	?, ?, ?, ?,
-	?, ?, ?, ?,
-	?, ?, ?, ?,
-	?, ?, ?, ?
+		2.0 / (proj.right - proj.left), 0, 0, -(proj.right + proj.left) / (proj.right - proj.left),
+		0, 2.0 / (proj.top - proj.bottom), 0, -(proj.top + proj.bottom) / (proj.top - proj.bottom),
+		0, 0, 2.0 / (proj.nearClip - proj.farClip), -(proj.farClip + proj.nearClip) / (proj.farClip - proj.nearClip),
+		0, 0, 0, 1.0
 	);
-	*/
+	std::cout << project_matrix;
+	
 }
 
 // [TODO] compute persepective projection matrix
 void setPerspective()
 {
-	/*
+	GLfloat xmax = proj.right;
+	GLfloat xmin = proj.left;
+	GLfloat ymax = proj.top;
+	GLfloat ymin = proj.bottom;
+	GLfloat znear = proj.nearClip;
+	GLfloat zfar = proj.farClip;
+
+
 	project_matrix = Matrix4(
-	?, ?, ?, ?,
-	?, ?, ?, ?,
-	?, ?, ?, ?,
-	?, ?, ?, ?
+	2.0*znear / (xmax - xmin), 0, (xmax + xmin) / (xmin - xmax), 0,
+		0, 2.0*znear / (ymax - ymin), (ymax + ymin) / (ymin - ymax), 0,
+		0, 0, (zfar + znear) / (znear - zfar), (zfar*znear) / (znear - zfar),
+		0, 0, -1, 0
 	);
-	*/
+	
 }
 
 void traverseColorModel(model &m)
@@ -370,6 +399,45 @@ void drawModel(model* model)
 	Matrix4 MVP;
 	GLfloat mvp[16];
 
+	Matrix4 M = T*S*R;
+	//MVP=P*V*M
+
+	/*sample
+
+	M = Matrix4(
+	1,0,0,0,
+	0,1,0,0,
+	0,0,1,0,
+	0,0,0,1
+	);
+
+	view_matrix = Matrix4(
+	1, 0, 0, 0,
+	0, 1, 0, 0,
+	0, 0, 1, 0,
+	0, 0, 0, 1
+	);
+
+		project_matrix = Matrix4(
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, -1, 0,
+		0, 0, 0, 1
+	);
+
+
+
+	*/
+	
+	//std::cout << project_matrix << view_matrix << M;
+	
+
+	MVP = project_matrix*view_matrix*M;
+
+
+
+
+
 	// row-major ---> column-major
 	mvp[0] = MVP[0];  mvp[4] = MVP[1];   mvp[8] = MVP[2];    mvp[12] = MVP[3];
 	mvp[1] = MVP[4];  mvp[5] = MVP[5];   mvp[9] = MVP[6];    mvp[13] = MVP[7];
@@ -514,74 +582,74 @@ void onMouse(int who, int state, int x, int y)
 		case GLUT_WHEEL_UP:
 			printf("wheel up      \n");
 			// [TODO] assign corresponding operation
-			/*
-			if (...)
+			
+			if (current_instruction_mode==change_eye_pos )
 			{
 				main_camera.position.z -= 0.025;
 				setViewingMatrix();
 				printf("Camera Position = ( %f , %f , %f )\n", main_camera.position.x, main_camera.position.y, main_camera.position.z);
 			}
-			else if (...)
+			else if (current_instruction_mode==change_center_pos)
 			{
 				main_camera.center.z += 0.1;
 				setViewingMatrix();
 				printf("Camera Viewing Direction = ( %f , %f , %f )\n", main_camera.center.x, main_camera.center.y, main_camera.center.z);
 			}
-			else if (...)
+			else if (current_instruction_mode== change_up_vec)
 			{
 				main_camera.up_vector.z += 0.33;
 				setViewingMatrix();
 				printf("Camera Up Vector = ( %f , %f , %f )\n", main_camera.up_vector.x, main_camera.up_vector.y, main_camera.up_vector.z);
 			}
-			else if (...)
+			else if (current_instruction_mode==object_translation)
 			{
 				models[cur_idx].position.z += 0.1;
 			}
-			else if (...)
+			else if (current_instruction_mode==object_scaling)
 			{
 				models[cur_idx].scale.z += 1.025;
 			}
-			else if (...)
+			else if (current_instruction_mode==object_rotation)
 			{
 				models[cur_idx].rotation.z += (PI/180.0) * 5;
 			}
-			*/
+			
 			break;
 		case GLUT_WHEEL_DOWN:
 			printf("wheel down    \n");
 			// [TODO] assign corresponding operation
-			/*
-			if (...)
+			
+			if (current_instruction_mode == change_eye_pos)
 			{
 				main_camera.position.z += 0.025;
 				setViewingMatrix();
 				printf("Camera Position = ( %f , %f , %f )\n", main_camera.position.x, main_camera.position.y, main_camera.position.z);
 			}
-			else if (...)
+			else if (current_instruction_mode == change_center_pos)
 			{
 				main_camera.center.z -= 0.33;
 				setViewingMatrix();
 				printf("Camera Viewing Direction = ( %f , %f , %f )\n", main_camera.center.x, main_camera.center.y, main_camera.center.z);
 			}
-			else if (...)
+			else if (current_instruction_mode == change_up_vec)
 			{
 				main_camera.up_vector.z -= 0.33;
 				setViewingMatrix();
 				printf("Camera Up Vector = ( %f , %f , %f )\n", main_camera.up_vector.x, main_camera.up_vector.y, main_camera.up_vector.z);
 			}
-			else if (...)
+			else if (current_instruction_mode == object_translation)
 			{
 				models[cur_idx].position.z -= 0.33;
 			}
-			else if (...)
+			else if (current_instruction_mode == object_scaling)
 			{
 				models[cur_idx].scale.z -= 0.025;
 			}
-			else if (...)
+			else if (current_instruction_mode == object_rotation)
 			{
 				models[cur_idx].rotation.z -= (PI / 180.0) * 5;
 			}
-			*/
+			
 			break;
 		default:                 
 			printf("0x%02X          ", who); break;
@@ -604,45 +672,46 @@ void onMouseMotion(int x, int y)
 	current_y = y;
 
 	// [TODO] assign corresponding operation
-	/*
-	if (...)
+	
+	if (current_instruction_mode==change_eye_pos)
 	{
+
 		main_camera.position.x += diff_x*(1.0 / 400.0);
 		main_camera.position.y += diff_y*(1.0 / 400.0);
 		setViewingMatrix();
 		printf("Camera Position = ( %f , %f , %f )\n", main_camera.position.x, main_camera.position.y, main_camera.position.z);
 	}
-	else if (...)
+	else if (current_instruction_mode== change_center_pos)
 	{
 		main_camera.center.x += diff_x*(1.0 / 400.0);
 		main_camera.center.y += diff_y*(1.0 / 400.0);
 		setViewingMatrix();
 		printf("Camera Viewing Direction = ( %f , %f , %f )\n", main_camera.center.x, main_camera.center.y, main_camera.center.z);
 	}
-	else if (...)
+	else if (current_instruction_mode==change_up_vec)
 	{
 		main_camera.up_vector.x += diff_x*0.1;
 		main_camera.up_vector.y += diff_y*0.1;
 		setViewingMatrix();
 		printf("Camera Up Vector = ( %f , %f , %f )\n", main_camera.up_vector.x, main_camera.up_vector.y, main_camera.up_vector.z);
 	}
-	else if (...)
+	else if (current_instruction_mode==object_translation)
 	{
 		models[cur_idx].position.x += diff_x*(1.0 / 400.0);
 		models[cur_idx].position.y -= diff_y*(1.0 / 400.0);
 	}
-	else if (...)
+	else if (current_instruction_mode==object_scaling)
 	{
 		models[cur_idx].scale.x += diff_x*0.025;
 		models[cur_idx].scale.y += diff_y*0.025;
 	}
-	else if (...)
+	else if (current_instruction_mode==object_rotation)
 	{
 		models[cur_idx].rotation.x += PI / 180.0*diff_y*(45.0 / 400.0);
 		models[cur_idx].rotation.y += PI / 180.0*diff_x*(45.0 / 400.0);
 	}
 	printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
-	*/
+	
 }
 
 void onKeyboard(unsigned char key, int x, int y)
@@ -667,21 +736,73 @@ void onKeyboard(unsigned char key, int x, int y)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		break;
 	case 'o':
+		setOrthogonal();
+		current_projection_mode = perspective_view;
 		break;
 	case 'p':
+		setPerspective();
+		current_projection_mode = orthogonal_view;
 		break;
 	case 'e':
+		std::cout << "change camera pos" << std::endl;
+		current_instruction_mode = change_eye_pos;
 		break;
 	case 'c':
+		current_instruction_mode = change_center_pos;
 		break;
 	case 'i':
+
+		/*
+		(此model的position、rotation、scaling值，相機之position、center，projection之矩陣模式以及其設定之left、right、up、bottom、nearClip、farClip、fov值)。不用顯示矩陣值
+		*/
+		std::cout << "All matrix:" << std::endl;
+		std::cout << "model position:"<< models[cur_idx].position << std::endl;
+		std::cout << "model rotation:" << models[cur_idx].rotation << std::endl;
+		std::cout << "model scaling:" << models[cur_idx].scale << std::endl;
+	
+		std::cout << "camera position:" <<main_camera.position << std::endl;
+		std::cout << "camera center:" << main_camera.center << std::endl;
+
+		if (current_projection_mode==orthogonal_view)
+		{
+			std::cout << "orthogonal view" << std::endl;
+		}
+		else {
+
+			std::cout << "perspective veiw" << std::endl;
+		}
+
+		std::cout << "left:" << proj.left << std::endl;
+		std::cout << "right:" << proj.right << std::endl;
+		std::cout << "up:" << proj.top << std::endl;
+		std::cout << "bottom:" << proj.bottom << std::endl;
+		std::cout << "nearClip:" << proj.nearClip << std::endl;
+		std::cout << "farClip:" << proj.farClip << std::endl;
+		std::cout << "fov:" << proj.fovy << std::endl;
+
+		//debug
+		std::cout << "projection matrix:" << project_matrix << std::endl;
+		std::cout << "view matrix:" << view_matrix << std::endl;
+
+
+
 		break;
 	case 't':
+		std::cout << "T press" << std::endl << "Object Translation Mode" << std::endl;
+		current_instruction_mode = object_translation;
 		break;
 	case 's':
+		std::cout << "S press" << std::endl << "Object Scaling Mode" << std::endl;
+		current_instruction_mode = object_scaling;
 		break;
 	case 'r':
+		std::cout << "R press" << std::endl << "Object Rotation Mode" << std::endl;
+		current_instruction_mode = object_rotation;
 		break;
+	case 'u':
+		std::cout << "U press" << std::endl << "Change Up Vector Mode" << std::endl;
+		current_instruction_mode = change_up_vec;
+
 	}
 	printf("\n");
 }
