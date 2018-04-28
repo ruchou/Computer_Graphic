@@ -233,18 +233,13 @@ void setOrthogonal()
 // [TODO] compute persepective projection matrix
 void setPerspective()
 {
-	GLfloat xmax = proj.right;
-	GLfloat xmin = proj.left;
-	GLfloat ymax = proj.top;
-	GLfloat ymin = proj.bottom;
-	GLfloat znear = proj.nearClip;
-	GLfloat zfar = proj.farClip;
+
 
 
 	project_matrix = Matrix4(
-	2.0*znear / (xmax - xmin), 0, (xmax + xmin) / (xmin - xmax), 0,
-		0, 2.0*znear / (ymax - ymin), (ymax + ymin) / (ymin - ymax), 0,
-		0, 0, (zfar + znear) / (znear - zfar), (zfar*znear) / (znear - zfar),
+	2.0*proj.nearClip / (proj.right - proj.left), 0, (proj.right + proj.left) / (proj.right - proj.left), 0,
+		0, 2.0* proj.nearClip / (proj.top - proj.bottom), (proj.top + proj.bottom) / (proj.top - proj.bottom), 0,
+		0, 0, (proj.farClip + proj.nearClip) / (proj.nearClip - proj.farClip), 2*proj.farClip*proj.nearClip / (proj.nearClip - proj.farClip),
 		0, 0, -1, 0
 	);
 	
