@@ -602,7 +602,7 @@ void onMouse(int who, int state, int x, int y)
 			}
 			else if (current_instruction_mode==object_scaling)
 			{
-				models[cur_idx].scale.z += 1.025;
+				models[cur_idx].scale.z += 0.025;
 			}
 			else if (current_instruction_mode==object_rotation)
 			{

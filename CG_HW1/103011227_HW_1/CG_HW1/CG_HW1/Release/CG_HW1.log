@@ -38,8 +38,8 @@ main.cpp(829): warning C4244: '=': 將 'int' 轉換為 'GLfloat'，由於類型�
 main.cpp(870): warning C4018: '<': signed/unsigned 不相符
 main.cpp(919): warning C4018: '<': signed/unsigned 不相符
   正在產生程式碼
-  3 of 288 functions ( 1.0%) were compiled, the rest were copied from previous compilation.
+  2 of 288 functions ( 0.7%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    0 functions had inline decision re-evaluated but remain unchanged
+    10 functions had inline decision re-evaluated but remain unchanged
   已完成程式碼產生
   CG_HW1.vcxproj -> C:\Users\joechou\Documents\GitHub\Computer_Graphic\CG_HW1\103011227_HW_1\CG_HW1\Release\CG_HW1.exe
