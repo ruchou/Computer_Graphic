@@ -750,7 +750,7 @@ void onKeyboard(unsigned char key, int x, int y)
 		/*
 		(此model的position、rotation、scaling值，相機之position、center，projection之矩陣模式以及其設定之left、right、up、bottom、nearClip、farClip、fov值)。不用顯示矩陣值
 		*/
-		//std::cout << "All matrix:" << std::endl;
+		std::cout << "All matrix:" << std::endl;
 		std::cout << "model position:"<< models[cur_idx].position << std::endl;
 		std::cout << "model rotation:" << models[cur_idx].rotation << std::endl;
 		std::cout << "model scaling:" << models[cur_idx].scale << std::endl;
