@@ -35,10 +35,27 @@
 using namespace std;
 
 // Shader attributes
+
+//TA
 GLuint vaoHandle;
 GLuint vboHandles[2];
 GLuint positionBufferHandle;
 GLuint colorBufferHandle;
+
+//Mine
+GLint iLocMDiffuse, iLocMAmbient, iLocMSpecular, iLocMShininess;
+GLint iLocAmbientOn, iLocDiffuseOn, iLocSpecularOn;
+GLint iLocDirectionalOn, iLocPointOn, iLocSpotOn;
+GLint iLocNormalTransform, iLocModelTransform, iLocViewTransform;
+GLint iLocEyePosition;
+GLint iLocPointPosition, iLocSpotPosition, iLocSpotExponent, iLocSpotCutoff, iLocSpotCosCutoff;
+GLint iLocPerPixelLighting;
+
+GLint iLocPosition;
+GLint iLocNormal;
+GLint iLocMVP;
+
+
 
 // Shader attributes for uniform variables
 GLuint iLocP;
@@ -52,6 +69,24 @@ struct iLocLightInfo
 	GLuint diffuse;
 	GLuint specular;
 }iLocLightInfo[3];
+
+typedef struct LightSourceParameters{
+	float ambient[4];
+	float diffuse[4];
+	float specular[4];
+	float position[4];
+	float halfVector[4];
+	float spotDirection[3];
+	float spotExponent;
+	float spotCutoff; // (range: [0.0,90.0], 180.0)
+	float spotCosCutoff; // (range: [1.0,0.0],-1.0)
+	float constantAttenuation;
+	float linearAttenuation;
+	float quadraticAttenuation;
+} LightSource;
+
+LightSource	lightsource[4];
+
 
 struct Group
 {
@@ -101,10 +136,43 @@ int timeInterval = 33;
 bool isRotate = true;
 float scaleOffset = 0.65f;
 
+bool ambientOn = true, diffuseOn = true, specularOn = true;
+int directionalOn = 0, pointOn = 0, spotOn = 0;
+/*
+spotOn = 0, no spot light
+spotOn = 1, normal spot light
+spotOn = 2, directional spot light
+spotOn = 3, point spot light
+*/
+int perPixelOn = 0; // 1: enable per pixel lighting
+
+
 
 struct Frustum {
 	float left, right, top, bottom, cnear, cfar;
 };
+
+
+void matrixToShader( GLint iLoc, Matrix4 mat) {
+	// pass 4x4 matrix to shader, row-major --> column major
+	GLfloat MATRIX[16];
+	// row-major ---> column-major
+	MATRIX[0] = mat[0];  MATRIX[4] = mat[1];   MATRIX[8] = mat[2];    MATRIX[12] = mat[3];
+	MATRIX[1] = mat[4];  MATRIX[5] = mat[5];   MATRIX[9] = mat[6];    MATRIX[13] = mat[7];
+	MATRIX[2] = mat[8];  MATRIX[6] = mat[9];   MATRIX[10] = mat[10];   MATRIX[14] = mat[11];
+	MATRIX[3] = mat[12]; MATRIX[7] = mat[13];  MATRIX[11] = mat[14];   MATRIX[15] = mat[15];
+	glUniformMatrix4fv(iLoc, 1, GL_FALSE, MATRIX);
+
+}
+
+void vectorToShader(GLint iLoc,Vector3 vector) {
+	GLfloat vec[3];
+	vec[0] = vector[0];
+	vec[1] = vector[1];
+	vec[2] = vector[2];
+	glUniform3fv(iLoc, 1, vec);
+}
+
 
 Matrix4 myViewingMatrix(Vector3 cameraPosition, Vector3 cameraViewDirection, Vector3 cameraUpVector)
 {
@@ -382,6 +450,88 @@ void setVertexBufferObjects()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 9, colorData, GL_STATIC_DRAW);
 }
 
+void setLightingSource() {
+	float PLRange = 70.0; // todo
+						  // 0: Ambient
+	lightsource[0].position[0] = 0;
+	lightsource[0].position[1] = 0;
+	lightsource[0].position[2] = -1;
+	lightsource[0].position[3] = 1;
+	lightsource[0].ambient[0] = 0.75;
+	lightsource[0].ambient[1] = 0.75;
+	lightsource[0].ambient[2] = 0.75;
+	lightsource[0].ambient[3] = 1;
+
+	// 1: directional light
+	lightsource[1].position[0] = 0;
+	lightsource[1].position[1] = 1;
+	lightsource[1].position[2] = 1;
+	lightsource[1].position[3] = 1;
+	lightsource[1].ambient[0] = 0;
+	lightsource[1].ambient[1] = 0;
+	lightsource[1].ambient[2] = 0;
+	lightsource[1].ambient[3] = 1;
+	lightsource[1].diffuse[0] = 0.8;
+	lightsource[1].diffuse[1] = 0.8;
+	lightsource[1].diffuse[2] = 0.8;
+	lightsource[1].diffuse[3] = 1;
+	lightsource[1].specular[0] = 0.8;
+	lightsource[1].specular[1] = 0.8;
+	lightsource[1].specular[2] = 0.8;
+	lightsource[1].specular[3] = 1;
+	lightsource[1].constantAttenuation = 1;
+	lightsource[1].linearAttenuation = 4.5 / PLRange;
+	lightsource[1].quadraticAttenuation = 75 / (PLRange*PLRange);
+
+	// 2: point light
+	lightsource[2].position[0] = 1;
+	lightsource[2].position[1] = 2;
+	lightsource[2].position[2] = 0;
+	lightsource[2].position[3] = 1;
+	lightsource[2].ambient[0] = 0;
+	lightsource[2].ambient[1] = 0;
+	lightsource[2].ambient[2] = 0;
+	lightsource[2].ambient[3] = 1;
+	lightsource[2].diffuse[0] = 0.8;
+	lightsource[2].diffuse[1] = 0.8;
+	lightsource[2].diffuse[2] = 0.8;
+	lightsource[2].diffuse[3] = 1;
+	lightsource[2].specular[0] = 0.8;
+	lightsource[2].specular[1] = 0.8;
+	lightsource[2].specular[2] = 0.8;
+	lightsource[2].specular[3] = 1;
+	lightsource[2].constantAttenuation = 1;
+	lightsource[2].linearAttenuation = 4.5 / PLRange;
+	lightsource[2].quadraticAttenuation = 75 / (PLRange*PLRange);
+
+	// 3: spot light
+	lightsource[3].position[0] = 0;
+	lightsource[3].position[1] = 0;
+	lightsource[3].position[2] = 1;
+	lightsource[3].position[3] = 1;
+	lightsource[3].ambient[0] = 0;
+	lightsource[3].ambient[1] = 0;
+	lightsource[3].ambient[2] = 0;
+	lightsource[3].ambient[3] = 1;
+	lightsource[3].diffuse[0] = 0.8;
+	lightsource[3].diffuse[1] = 0.8;
+	lightsource[3].diffuse[2] = 0.8;
+	lightsource[3].diffuse[3] = 1;
+	lightsource[3].specular[0] = 0.8;
+	lightsource[3].specular[1] = 0.8;
+	lightsource[3].specular[2] = 0.8;
+	lightsource[3].specular[3] = 1;
+	lightsource[3].spotDirection[0] = 0;
+	lightsource[3].spotDirection[1] = 0;
+	lightsource[3].spotDirection[2] = -2;
+	lightsource[3].spotExponent = 0.5;
+	lightsource[3].spotCutoff = 45;
+	lightsource[3].spotCosCutoff = 0.99; // 1/12 pi
+	lightsource[3].constantAttenuation = 1;
+	lightsource[3].linearAttenuation = 4.5 / PLRange;
+	lightsource[3].quadraticAttenuation = 75 / (PLRange*PLRange);
+
+}
 void setUniformVariables(GLuint p)
 {
 	iLocP = glGetUniformLocation(p, "um4p");

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
@@ -397,40 +398,9 @@ void drawModel(model* model)
 	Matrix4 M = T*S*R;
 	//MVP=P*V*M
 
-	/*sample
-
-	M = Matrix4(
-	1,0,0,0,
-	0,1,0,0,
-	0,0,1,0,
-	0,0,0,1
-	);
-
-	view_matrix = Matrix4(
-	1, 0, 0, 0,
-	0, 1, 0, 0,
-	0, 0, 1, 0,
-	0, 0, 0, 1
-	);
-
-		project_matrix = Matrix4(
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, -1, 0,
-		0, 0, 0, 1
-	);
-
-
-
-	*/
-	
-	//std::cout << project_matrix << view_matrix << M;
 	
 
 	MVP = project_matrix*view_matrix*M;
-
-
-
 
 
 	// row-major ---> column-major
