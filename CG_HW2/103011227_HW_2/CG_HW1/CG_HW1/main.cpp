@@ -105,8 +105,9 @@ GLint iLocEyePosition;
 GLint iLocPointPosition, iLocSpotPosition, iLocSpotExponent, iLocSpotCutoff, iLocSpotCosCutoff;
 GLint iLocPerPixelLighting;
 
-#define numOfModels 5
+//#define numOfModels 5
 
+float scaleOffset = 0.65f;
 
 
 struct camera
@@ -166,10 +167,18 @@ spotOn = 3, point spot light
 */
 int perPixelOn = 0; // 1: enable per pixel lighting
 
-int autoRotateMode = 0;
+//int autoRotateMode = 0;
+
+//rotation
+bool isRotate = true;
+float rotateVal = 0.0f;
+int timeInterval = 33;
+Matrix4 R;
 float rotateSpeed = 300.0; // it is the reciprocal of actual rotate speed
 
-int windowHeight, windowWidth;
+
+//windows
+//int windowHeight, windowWidth;
 
 #define numOfLightSources 4
 struct LightSourceParameters {
@@ -384,17 +393,78 @@ Matrix4 getViewTransMatrix() {
 }
 
 
+Matrix4 myRotateMatrix(float ax, float ay, float az)
+{
+	float cosX = cosf(ax);
+	float sinX = sinf(ax);
+	float cosY = cosf(ay);
+	float sinY = sinf(ay);
+	float cosZ = cosf(az);
+	float sinZ = sinf(az);
+
+	Matrix4 mat;
+	mat[0] = cosZ * cosY;
+	mat[1] = -sinZ * cosX + cosZ * sinY*sinX;
+	mat[2] = sinZ * sinX + cosZ * sinY*cosX;
+	mat[3] = 0;
+	mat[4] = sinZ * cosY;
+	mat[5] = cosZ * cosX + sinZ * sinY*sinX;
+	mat[6] = -cosZ * sinX + sinZ * sinY*cosX;
+	mat[7] = 0;
+	mat[8] = -sinY;
+	mat[9] = cosY * sinX;
+	mat[11] = 0;
+	mat[12] = 0;
+	mat[13] = 0;
+	mat[14] = 0;
+	mat[15] = 1;
+	return mat;
+}
+
+
+void timerFunc(int timer_value)
+{
+	if (isRotate)
+		rotateVal += 0.1f;
+
+//	float t = glutGet(GLUT_ELAPSED_TIME);
+//	float offsetTime = t / rotateSpeed;
+
+	if (isRotate) {
+		R = Matrix4(
+			cos(rotateVal), 0, sin(rotateVal), 0,
+			0, 1, 0, 0,
+			-sin(rotateVal), 0, cos(rotateVal), 0,
+			0, 0, 0, 1);
+
+	}
+	else {
+
+
+	}
+
+
+
+	glutPostRedisplay();
+	glutTimerFunc(timeInterval, timerFunc, 0);
+}
+
+
+
+
 void traverseColorModel(model &m)
 {
 	int i;
 
-	GLfloat maxVal[3];
-	GLfloat minVal[3];
+	GLfloat maxVal[3]={-100000,-10000,-100000};
+	GLfloat minVal[3] = {100000,100000,1000000};
 
 
 	// number of triangles
 	m.vertices = (GLfloat*)malloc(sizeof(GLfloat)*m.obj->numtriangles * 9);
 	m.normals = (GLfloat*)malloc(sizeof(GLfloat)*m.obj->numtriangles * 9);
+
+	/*
 
 	float max_x = m.obj->vertices[3];
 	float max_y = m.obj->vertices[4];
@@ -402,13 +472,17 @@ void traverseColorModel(model &m)
 	float min_x = m.obj->vertices[3];
 	float min_y = m.obj->vertices[4];
 	float min_z = m.obj->vertices[5];
-
+	*/
 	GLMgroup* group = m.obj->groups;
 	int offsetIndex = 0;
 	// index from 0 - 9 * group->numtriangles-1 is group 1's vertices and normals, and so on
 	while (group) {
 		for (int i = 0; i < group->numtriangles; i++) {
-			int triangleID = group->triangles[i];
+
+			
+			int triangleIdx = group->triangles[i];
+
+			/*
 			// the index of each vertex
 			int indv1 = m.obj->triangles[triangleID].vindices[0];
 			int indv2 = m.obj->triangles[triangleID].vindices[1];
@@ -418,54 +492,51 @@ void traverseColorModel(model &m)
 			int indn1 = m.obj->triangles[triangleID].nindices[0];
 			int indn2 = m.obj->triangles[triangleID].nindices[1];
 			int indn3 = m.obj->triangles[triangleID].nindices[2];
+			*/
+
+
+			int indv[3] = {
+				m.obj->triangles[triangleIdx].vindices[0],
+				m.obj->triangles[triangleIdx].vindices[1],
+				m.obj->triangles[triangleIdx].vindices[2]
+			};
+			int indn[3] = {
+				m.obj->triangles[triangleIdx].nindices[0],
+				m.obj->triangles[triangleIdx].nindices[1],
+				m.obj->triangles[triangleIdx].nindices[2]
+			};
+
 
 
 			// vertices
 
-			m.vertices[offsetIndex + i * 9 + 0] = m.obj->vertices[indv1 * 3 + 0];
-			m.vertices[offsetIndex + i * 9 + 1] = m.obj->vertices[indv1 * 3 + 1];
-			m.vertices[offsetIndex + i * 9 + 2] = m.obj->vertices[indv1 * 3 + 2];
-			if (m.vertices[offsetIndex + i * 9 + 0] > max_x) max_x = m.vertices[offsetIndex + i * 9 + 0];
-			if (m.vertices[offsetIndex + i * 9 + 1] > max_y) max_y = m.vertices[offsetIndex + i * 9 + 1];
-			if (m.vertices[offsetIndex + i * 9 + 2] > max_z) max_z = m.vertices[offsetIndex + i * 9 + 2];
-			if (m.vertices[offsetIndex + i * 9 + 0] < min_x) min_x = m.vertices[offsetIndex + i * 9 + 0];
-			if (m.vertices[offsetIndex + i * 9 + 1] < min_y) min_y = m.vertices[offsetIndex + i * 9 + 1];
-			if (m.vertices[offsetIndex + i * 9 + 2] < min_z) min_z = m.vertices[offsetIndex + i * 9 + 2];
 
-			m.vertices[offsetIndex + i * 9 + 3] = m.obj->vertices[indv2 * 3 + 0];
-			m.vertices[offsetIndex + i * 9 + 4] = m.obj->vertices[indv2 * 3 + 1];
-			m.vertices[offsetIndex + i * 9 + 5] = m.obj->vertices[indv2 * 3 + 2];
-			if (m.vertices[offsetIndex + i * 9 + 3] > max_x) max_x = m.vertices[offsetIndex + i * 9 + 3];
-			if (m.vertices[offsetIndex + i * 9 + 4] > max_y) max_y = m.vertices[offsetIndex + i * 9 + 4];
-			if (m.vertices[offsetIndex + i * 9 + 5] > max_z) max_z = m.vertices[offsetIndex + i * 9 + 5];
-			if (m.vertices[offsetIndex + i * 9 + 3] < min_x) min_x = m.vertices[offsetIndex + i * 9 + 3];
-			if (m.vertices[offsetIndex + i * 9 + 4] < min_y) min_y = m.vertices[offsetIndex + i * 9 + 4];
-			if (m.vertices[offsetIndex + i * 9 + 5] < min_z) min_z = m.vertices[offsetIndex + i * 9 + 5];
+			for (int k = 0; k < 3; k++) {
+				m.vertices[offsetIndex + i * 9 + 3*k] = m.obj->vertices[indv[k] * 3 + 0];
+				m.vertices[offsetIndex + i * 9 + 3*k+1] = m.obj->vertices[indv[k] * 3 + 1];
+				m.vertices[offsetIndex + i * 9 + 3*k+2] = m.obj->vertices[indv[k] * 3 + 2];
+			
+				minVal[0] = min(minVal[0], m.vertices[offsetIndex + i * 9 + 3*k]);
+				minVal[1]= min(minVal[1], m.vertices[offsetIndex + i * 9 + 3*k+1]);
+				minVal[2] = min(minVal[2], m.vertices[offsetIndex + i * 9 + 3 * k + 2]);
 
-			m.vertices[offsetIndex + i * 9 + 6] = m.obj->vertices[indv3 * 3 + 0];
-			m.vertices[offsetIndex + i * 9 + 7] = m.obj->vertices[indv3 * 3 + 1];
-			m.vertices[offsetIndex + i * 9 + 8] = m.obj->vertices[indv3 * 3 + 2];
-			if (m.vertices[offsetIndex + i * 9 + 6] > max_x) max_x = m.vertices[offsetIndex + i * 9 + 6];
-			if (m.vertices[offsetIndex + i * 9 + 7] > max_y) max_y = m.vertices[offsetIndex + i * 9 + 7];
-			if (m.vertices[offsetIndex + i * 9 + 8] > max_z) max_z = m.vertices[offsetIndex + i * 9 + 8];
-			if (m.vertices[offsetIndex + i * 9 + 6] < min_x) min_x = m.vertices[offsetIndex + i * 9 + 6];
-			if (m.vertices[offsetIndex + i * 9 + 7] < min_y) min_y = m.vertices[offsetIndex + i * 9 + 7];
-			if (m.vertices[offsetIndex + i * 9 + 8] < min_z) min_z = m.vertices[offsetIndex + i * 9 + 8];
+				maxVal[0] = max(maxVal[0], m.vertices[offsetIndex + i * 9 + 3 * k]);
+				maxVal[1] = max(maxVal[1], m.vertices[offsetIndex + i * 9 + 3 * k + 1]);
+				maxVal[2] = max(maxVal[2], m.vertices[offsetIndex + i * 9 + 3 * k + 2]);
 
-			// colors
+				
+				m.normals[offsetIndex + i * 9 + 3 * k] = m.obj->normals[indv[k] * 3 + 0];
+				m.normals[offsetIndex + i * 9 + 3 * k + 1] = m.obj->normals[indv[k] * 3 + 1];
+				m.normals[offsetIndex + i * 9 + 3 * k + 2] = m.obj->normals[indv[k] * 3 + 2];
 
-			m.normals[offsetIndex + i * 9 + 0] = m.obj->normals[indn1 * 3 + 0];
-			m.normals[offsetIndex + i * 9 + 1] = m.obj->normals[indn1 * 3 + 1];
-			m.normals[offsetIndex + i * 9 + 2] = m.obj->normals[indn1 * 3 + 2];
 
-			m.normals[offsetIndex + i * 9 + 3] = m.obj->normals[indn2 * 3 + 0];
-			m.normals[offsetIndex + i * 9 + 4] = m.obj->normals[indn2 * 3 + 1];
-			m.normals[offsetIndex + i * 9 + 5] = m.obj->normals[indn2 * 3 + 2];
 
-			m.normals[offsetIndex + i * 9 + 6] = m.obj->normals[indn3 * 3 + 0];
-			m.normals[offsetIndex + i * 9 + 7] = m.obj->normals[indn3 * 3 + 1];
-			m.normals[offsetIndex + i * 9 + 8] = m.obj->normals[indn3 * 3 + 2];
 
+
+			}
+
+		
+			
 		}
 		offsetIndex += 9 * group->numtriangles;
 		group = group->next;
@@ -474,6 +545,7 @@ void traverseColorModel(model &m)
 
 
 
+	/*
 	float normalize_scale = max(max(abs(max_x - min_x), abs(max_y - min_y)), abs(max_z - min_z));
 
 	Matrix4 S, T;
@@ -487,6 +559,16 @@ void traverseColorModel(model &m)
 	T[11] = -(min_z + max_z) / 2;
 
 	m.N = S*T;
+	*/
+
+	float norm_scale = max(max(abs(maxVal[0] - minVal[0]), abs(maxVal[1] - minVal[1])), abs(maxVal[2] - minVal[2]));
+	Matrix4 S, T;
+
+	S[0] = 2 / norm_scale * scaleOffset;	S[5] = 2 / norm_scale * scaleOffset;	S[10] = 2 / norm_scale * scaleOffset;
+	T[3] = -(maxVal[0] + minVal[0]) / 2;
+	T[7] = -(maxVal[1] + minVal[1]) / 2;
+	T[11] = -(maxVal[2] + minVal[2]) / 2;
+	m.N = S * T;
 
 }
 
@@ -547,6 +629,8 @@ void onIdle()
 }
 
 void passMatrixToShader(GLint iLoc, Matrix4 matrix) {
+	
+	/*
 	// pass 4x4 matrix to shader, row-major --> column major
 	GLfloat MATRIX[16];
 	// row-major ---> column-major
@@ -554,7 +638,9 @@ void passMatrixToShader(GLint iLoc, Matrix4 matrix) {
 	MATRIX[1] = matrix[4];  MATRIX[5] = matrix[5];   MATRIX[9] = matrix[6];    MATRIX[13] = matrix[7];
 	MATRIX[2] = matrix[8];  MATRIX[6] = matrix[9];   MATRIX[10] = matrix[10];   MATRIX[14] = matrix[11];
 	MATRIX[3] = matrix[12]; MATRIX[7] = matrix[13];  MATRIX[11] = matrix[14];   MATRIX[15] = matrix[15];
-	glUniformMatrix4fv(iLoc, 1, GL_FALSE, MATRIX);
+	*/
+
+	glUniformMatrix4fv(iLoc, 1, GL_FALSE, matrix.getTranspose());
 }
 
 void passVector3ToShader(GLint iLoc, Vector3 vector) {
@@ -579,8 +665,10 @@ void onDisplay(void)
 										   //MVP
 	Matrix4 T;
 	Matrix4 S;
-	Matrix4 R;
-	if (autoRotateMode == 0) {
+	Matrix4 MVP;
+
+	/*
+	if (isRotate ==false) {
 		R = Matrix4(1, 0, 0, 0,
 			0, 1, 0, 0,
 			0, 0, 1, 0,
@@ -596,11 +684,13 @@ void onDisplay(void)
 			0, 0, 0, 1);
 		// rotate around
 	}
-	Matrix4 M = R*models[cur_idx].N;
-	Matrix4 V = getViewTransMatrix();
-	Matrix4 P = getPerpectiveMatrix();
 
-	Matrix4 MVP = P*V*M;
+	*/
+	Matrix4 M = R*models[cur_idx].N;
+	//Matrix4 V = getViewTransMatrix();
+	//Matrix4 P = getPerpectiveMatrix();
+
+	MVP = project_matrix * view_matrix*M;
 
 
 
@@ -618,7 +708,7 @@ void onDisplay(void)
 	// matrix parameters
 	passMatrixToShader(iLocMVP, MVP);
 	passMatrixToShader(iLocNormalTransform,models[cur_idx].N );
-	passMatrixToShader(iLocViewTransform, V);
+	passMatrixToShader(iLocViewTransform, view_matrix);
 	passMatrixToShader(iLocModelTransform, M);
 
 	passVector3ToShader(iLocEyePosition, eyePos);
@@ -930,8 +1020,13 @@ void onMouseMotion(int x, int y)
 void onPassiveMouseMotion(int x, int y) {
 	// move the position of spot light
 	if (spotOn != 0) {
+
+		/*
 		float wx = (float)x*2.0 / (float)windowWidth - 1.0;
 		float wy = -(float)y*2.0 / (float)windowHeight + 1.0;
+		*/
+		float wx = (float)x*2.0 / (float)800 - 1.0;
+		float wy = -(float)y*2.0 / (float)800 + 1.0;
 		// printf("new x = %f, y= %f\n", wx, wy);
 		lightsource[3].position[0] = wx;
 		lightsource[3].position[1] = wy;
@@ -1012,9 +1107,12 @@ void onKeyboard(unsigned char key, int x, int y)
 		printStatus();
 		break;
 	case GLUT_KEY_r:
-		autoRotateMode = (autoRotateMode + 1) % 2;
-		printf("Turn %s auto rotate\n", autoRotateMode ? "ON" : "OFF");
+		//autoRotateMode = (autoRotateMode + 1) % 2;
+		isRotate = !isRotate;
+
+		printf("Turn %s auto rotate\n", isRotate ? "ON" : "OFF");
 		break;
+	/*
 	case GLUT_KEY_v:
 		if (autoRotateMode == 1) {
 			if (rotateSpeed > 50.0) {
@@ -1026,12 +1124,14 @@ void onKeyboard(unsigned char key, int x, int y)
 			}
 		}
 		break;
+	
 	case GLUT_KEY_b:
 		if (autoRotateMode == 1) {
 			rotateSpeed += 50.0;
 			printf("Slow down the auot rotation\n");
 		}
 		break;
+	*/
 	case GLUT_KEY_c:
 		switch (spotOn) {
 		case 1:
@@ -1098,8 +1198,8 @@ void onKeyboardSpecial(int key, int x, int y) {
 
 void onWindowReshape(int width, int height)
 {
-	windowHeight = height;
-	windowWidth = width;
+	//windowHeight = height;
+	//windowWidth = width;
 	printf("%18s(): %dx%d\n", __FUNCTION__, width, height);
 }
 
@@ -1135,9 +1235,11 @@ int main(int argc, char **argv)
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 
 	// create window
-	windowHeight = windowWidth = 800;
+//	windowHeight = windowWidth = 800;
 	glutInitWindowPosition(500, 100);
-	glutInitWindowSize(windowWidth, windowHeight);
+//	glutInitWindowSize(windowWidth, windowHeight);
+	glutInitWindowSize(800, 800);
+
 	glutCreateWindow("10420 CS550000 CG HW2 103011227");
 
 	glewInit();
@@ -1163,6 +1265,7 @@ int main(int argc, char **argv)
 	glutMotionFunc(onMouseMotion);
 	glutPassiveMotionFunc(onPassiveMouseMotion);
 	glutReshapeFunc(onWindowReshape);
+	glutTimerFunc(timeInterval, timerFunc, 0);
 
 	// set up lighting parameters
 	// setLightingSource(); 

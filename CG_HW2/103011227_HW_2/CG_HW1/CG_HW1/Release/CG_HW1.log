@@ -1,45 +1,49 @@
 ﻿  main.cpp
-main.cpp(323): warning C4244: '引數': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
-main.cpp(339): warning C4244: '引數': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
-main.cpp(357): warning C4244: '引數': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
-main.cpp(410): warning C4018: '<': signed/unsigned 不相符
-main.cpp(391): warning C4101: 'maxVal': 未參考的區域變數
-main.cpp(392): warning C4101: 'minVal': 未參考的區域變數
-main.cpp(389): warning C4101: 'i': 未參考的區域變數
-main.cpp(511): warning C4018: '<': signed/unsigned 不相符
-main.cpp(590): warning C4244: '正在初始化': 將 'int' 轉換為 'float'，由於類型不同，可能導致資料遺失
-main.cpp(690): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(691): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(692): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(694): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(695): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(696): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(699): warning C4244: '=': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
-main.cpp(711): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(712): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(713): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(715): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(716): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(717): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(720): warning C4244: '=': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
-main.cpp(732): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(733): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(734): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(736): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(737): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(738): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(745): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(747): warning C4244: '=': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
-main.cpp(876): warning C4305: '+=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(887): warning C4305: '-=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(894): warning C4305: '-=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(902): warning C4305: '+=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-main.cpp(933): warning C4244: '正在初始化': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
-main.cpp(934): warning C4244: '正在初始化': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
-main.cpp(1182): warning C4018: '<': signed/unsigned 不相符
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(330): warning C4244: '引數': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(329): warning C4244: '引數': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(328): warning C4244: '引數': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(345): warning C4244: '引數': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(344): warning C4244: '引數': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(364): warning C4244: '引數': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(363): warning C4244: '引數': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(362): warning C4244: '引數': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(480): warning C4018: '<': signed/unsigned 不相符
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(502): warning C4838: 從 'GLuint' 到 'int' 的轉換必須是縮小轉換
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(507): warning C4838: 從 'GLuint' 到 'int' 的轉換必須是縮小轉換
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(457): warning C4101: 'i': 未參考的區域變數
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(593): warning C4018: '<': signed/unsigned 不相符
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(780): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(781): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(782): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(784): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(785): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(786): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(789): warning C4244: '=': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(801): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(802): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(803): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(805): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(806): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(807): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(810): warning C4244: '=': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(822): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(823): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(824): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(826): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(827): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(828): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(835): warning C4305: '=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(837): warning C4244: '=': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(966): warning C4305: '+=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(977): warning C4305: '-=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(984): warning C4305: '-=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(992): warning C4305: '+=': 從 'double' 轉換為 'float'，是由較大的類型轉換為較小的類型，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(1028): warning C4244: '正在初始化': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(1029): warning C4244: '正在初始化': 將 'double' 轉換為 'float'，由於類型不同，可能導致資料遺失
+c:\users\joe04_jmmq64o\documents\github\computer_graphic\cg_hw2\103011227_hw_2\cg_hw1\cg_hw1\main.cpp(1285): warning C4018: '<': signed/unsigned 不相符
   正在產生程式碼
-  6 of 290 functions ( 2.1%) were compiled, the rest were copied from previous compilation.
+  3 of 296 functions ( 1.0%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    19 functions had inline decision re-evaluated but remain unchanged
+    0 functions had inline decision re-evaluated but remain unchanged
   已完成程式碼產生
-  CG_HW1.vcxproj -> C:\Users\joechou\Documents\GitHub\Computer_Graphic\CG_HW2\103011227_HW_2\CG_HW1\Release\CG_HW1.exe
+  CG_HW1.vcxproj -> C:\Users\joe04_jmmq64o\Documents\GitHub\Computer_Graphic\CG_HW2\103011227_HW_2\CG_HW1\Release\CG_HW1.exe
