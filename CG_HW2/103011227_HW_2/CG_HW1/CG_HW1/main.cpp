@@ -296,55 +296,6 @@ void setPerspective()
 
 }
 
-
-/*
-
-
-
-Matrix4 getPerpectiveMatrix() {
-	// Zfar > Znear > 0
-	// in OpenGL api
-	// Xmax = Right, Xmin = Left
-	// Ymax = Top, Ymin = Bottom
-	// Znear = -Near, Zfar = -far
-	return Matrix4(
-		2.0*znear / (xmax - xmin), 0, (xmax + xmin) / (xmin - xmax), 0,
-		0, 2.0*znear / (ymax - ymin), (ymax + ymin) / (ymin - ymax), 0,
-		0, 0, (zfar + znear) / (znear - zfar), (2.0*zfar*znear) / (znear - zfar),
-		0, 0, -1, 0
-	);
-}
-*/
-
-/*
-Matrix4 getViewTransMatrix() {
-	
-	//use global parameter eyePos, centerPos, upVec to compute Viewing Transformation Matrix
-	
-	Vector3 P1P2 = centerPos - eyePos;
-	Vector3 P1P3 = upVec;
-	Vector3 Rz = P1P2.normalize();
-	Vector3 Rx = P1P2.cross(P1P3).normalize();
-	Vector3 Ry = Rx.cross(Rz).normalize();
-
-	Matrix4 Rv = Matrix4(
-		Rx[0], Rx[1], Rx[2], 0, // new X axis
-		Ry[0], Ry[1], Ry[2], 0, // new up vector
-		-Rz[0], -Rz[1], -Rz[2], 0,// new direction/forward vector
-		0, 0, 0, 1);
-	Matrix4 Rt = Matrix4(
-		1, 0, 0, -eyePos[0],
-		0, 1, 0, -eyePos[1],
-		0, 0, 1, -eyePos[2],
-		0, 0, 0, 1);
-	//std::cout <<"Rv"<< Rv << std::endl;
-	//std::cout <<"Rt"<< Rt << std::endl;
-	//upVec = Ry;
-	return Rv*Rt;
-}
-
-*/
-
 Matrix4 myRotateMatrix(float ax, float ay, float az)
 {
 	float cosX = cosf(ax);
@@ -373,7 +324,6 @@ Matrix4 myRotateMatrix(float ax, float ay, float az)
 	return mat;
 }
 
-
 void timerFunc(int timer_value)
 {
 	if (isRotate)
@@ -395,9 +345,6 @@ void timerFunc(int timer_value)
 	glutPostRedisplay();
 	glutTimerFunc(timeInterval, timerFunc, 0);
 }
-
-
-
 
 void traverseColorModel(model &m)
 {
@@ -519,7 +466,6 @@ void traverseColorModel(model &m)
 
 }
 
-
 void loadConfigFile()
 {
 	ifstream fin;
@@ -599,7 +545,184 @@ void passVector3ToShader(GLint iLoc, Vector3 vector) {
 	glUniform3fv(iLoc, 1, vec);
 }
 
+void setUniformVariables(GLuint p) {
 
+	iLocPosition = glGetAttribLocation(p, "av4position");
+	iLocNormal = glGetAttribLocation(p, "av3normal");
+	iLocMVP = glGetUniformLocation(p, "mvp");
+
+	iLocMDiffuse = glGetUniformLocation(p, "Material.diffuse");
+	iLocMAmbient = glGetUniformLocation(p, "Material.ambient");
+	iLocMSpecular = glGetUniformLocation(p, "Material.specular");
+	iLocMShininess = glGetUniformLocation(p, "Material.shininess");
+
+	iLocAmbientOn = glGetUniformLocation(p, "ambientOn");
+	iLocDiffuseOn = glGetUniformLocation(p, "diffuseOn");
+	iLocSpecularOn = glGetUniformLocation(p, "specularOn");
+	iLocDirectionalOn = glGetUniformLocation(p, "directionalOn");
+	iLocPointOn = glGetUniformLocation(p, "pointOn");
+	iLocSpotOn = glGetUniformLocation(p, "spotOn");
+	iLocNormalTransform = glGetUniformLocation(p, "NormalTransMatrix");
+	iLocModelTransform = glGetUniformLocation(p, "ModelTransMatrix");
+	iLocViewTransform = glGetUniformLocation(p, "ViewTransMatrix");
+	iLocEyePosition = glGetUniformLocation(p, "eyePos");
+	iLocPerPixelLighting = glGetUniformLocation(p, "perPixelOn");
+
+	iLocPointPosition = glGetUniformLocation(p, "LightSource[2].position");
+	iLocSpotPosition = glGetUniformLocation(p, "LightSource[3].position");
+	iLocSpotExponent = glGetUniformLocation(p, "LightSource[3].spotExponent");
+	iLocSpotCutoff = glGetUniformLocation(p, "LightSource[3].spotCutoff");
+	iLocSpotCosCutoff = glGetUniformLocation(p, "LightSource[3].spotCosCutoff");
+
+
+	float LightSource_0_pos[] = {
+		lightsource[0].position[0],
+		lightsource[0].position[1],
+		lightsource[0].position[2],
+		lightsource[0].position[3],
+	};
+
+	float LightSource_0_amb[] = {
+		lightsource[0].ambient[0],
+		lightsource[0].ambient[1],
+		lightsource[0].ambient[2],
+		lightsource[0].ambient[3],
+	};
+
+
+	//glUniform4fv(glGetUniformLocation(p, "LightSource[0].position"), 1, lightsource[0].position);
+	//glUniform4fv(glGetUniformLocation(p, "LightSource[0].ambient"), 1, lightsource[0].ambient);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[0].position"), 1, LightSource_0_pos);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[0].ambient"), 1, LightSource_0_amb);
+
+	float LightSource_1_pos[] = {
+		lightsource[1].position[0],
+		lightsource[1].position[1],
+		lightsource[1].position[2],
+		lightsource[1].position[3],
+	};
+	float LightSource_1_amb[] = {
+		lightsource[1].ambient[0],
+		lightsource[1].ambient[1],
+		lightsource[1].ambient[2],
+		lightsource[1].ambient[3],
+	};
+	float LightSource_1_diff[] = {
+		lightsource[1].diffuse[0],
+		lightsource[1].diffuse[1],
+		lightsource[1].diffuse[2],
+		lightsource[1].diffuse[3],
+	};
+	float LightSource_1_spec[] = {
+		lightsource[1].specular[0],
+		lightsource[1].specular[1],
+		lightsource[1].specular[2],
+		lightsource[1].specular[3],
+	};
+
+	/*
+	glUniform4fv(glGetUniformLocation(p, "LightSource[1].position"), 1, lightsource[1].position);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[1].ambient"), 1, lightsource[1].ambient);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[1].diffuse"), 1, lightsource[1].diffuse);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[1].specular"), 1, lightsource[1].specular);
+	*/
+	glUniform4fv(glGetUniformLocation(p, "LightSource[1].position"), 1, LightSource_1_pos);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[1].ambient"), 1, LightSource_1_amb);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[1].diffuse"), 1, LightSource_1_diff);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[1].specular"), 1, LightSource_1_spec);
+	glUniform1f(glGetUniformLocation(p, "LightSource[1].constantAttenuation"), lightsource[1].constantAttenuation);
+	glUniform1f(glGetUniformLocation(p, "LightSource[1].linearAttenuation"), lightsource[1].linearAttenuation);
+	glUniform1f(glGetUniformLocation(p, "LightSource[1].quadraticAttenuation"), lightsource[1].quadraticAttenuation);
+
+	float LightSource_2_pos[] = {
+		lightsource[2].position[0],
+		lightsource[2].position[1],
+		lightsource[2].position[2],
+		lightsource[2].position[3],
+	};
+	float LightSource_2_amb[] = {
+		lightsource[2].ambient[0],
+		lightsource[2].ambient[1],
+		lightsource[2].ambient[2],
+		lightsource[2].ambient[3],
+	};
+	float LightSource_2_diff[] = {
+		lightsource[2].diffuse[0],
+		lightsource[2].diffuse[1],
+		lightsource[2].diffuse[2],
+		lightsource[2].diffuse[3],
+	};
+	float LightSource_2_spec[] = {
+		lightsource[2].specular[0],
+		lightsource[2].specular[1],
+		lightsource[2].specular[2],
+		lightsource[2].specular[3],
+	};
+
+	/*
+	glUniform4fv(iLocPointPosition, 1, lightsource[2].position);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[2].ambient"), 1, lightsource[2].ambient);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[2].diffuse"), 1, lightsource[2].diffuse);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[2].specular"), 1, lightsource[2].specular);
+	*/
+	glUniform4fv(iLocPointPosition, 1, LightSource_2_pos);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[2].ambient"), 1, LightSource_2_amb);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[2].diffuse"), 1, LightSource_2_diff);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[2].specular"), 1, LightSource_2_spec);
+	glUniform1f(glGetUniformLocation(p, "LightSource[2].constantAttenuation"), lightsource[2].constantAttenuation);
+	glUniform1f(glGetUniformLocation(p, "LightSource[2].linearAttenuation"), lightsource[2].linearAttenuation);
+	glUniform1f(glGetUniformLocation(p, "LightSource[2].quadraticAttenuation"), lightsource[2].quadraticAttenuation);
+
+	float LightSource_3_pos[] = {
+		lightsource[3].position[0],
+		lightsource[3].position[1],
+		lightsource[3].position[2],
+		lightsource[3].position[3],
+	};
+	float LightSource_3_amb[] = {
+		lightsource[3].ambient[0],
+		lightsource[3].ambient[1],
+		lightsource[3].ambient[2],
+		lightsource[3].ambient[3],
+	};
+	float LightSource_3_diff[] = {
+		lightsource[3].diffuse[0],
+		lightsource[3].diffuse[1],
+		lightsource[3].diffuse[2],
+		lightsource[3].diffuse[3],
+	};
+	float LightSource_3_spec[] = {
+		lightsource[3].specular[0],
+		lightsource[3].specular[1],
+		lightsource[3].specular[2],
+		lightsource[3].specular[3],
+	};
+	float LightSource_3_spotDir[] = {
+		lightsource[3].spotDirection[0],
+		lightsource[3].spotDirection[1],
+		lightsource[3].spotDirection[2],
+		lightsource[3].spotDirection[3],
+	};
+
+	/*
+	glUniform4fv(iLocSpotPosition, 1, lightsource[3].position);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[3].ambient"), 1, lightsource[3].ambient);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[3].diffuse"), 1, lightsource[3].diffuse);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[3].specular"), 1, lightsource[3].specular);
+	glUniform3fv(glGetUniformLocation(p, "LightSource[3].spotDirection"), 1, lightsource[3].spotDirection);
+	*/
+	glUniform4fv(iLocSpotPosition, 1, LightSource_3_pos);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[3].ambient"), 1, LightSource_3_amb);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[3].diffuse"), 1, LightSource_3_diff);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[3].specular"), 1, LightSource_3_spec);
+	glUniform3fv(glGetUniformLocation(p, "LightSource[3].spotDirection"), 1, LightSource_3_spotDir);
+	glUniform1f(glGetUniformLocation(p, "LightSource[3].constantAttenuation"), lightsource[2].constantAttenuation);
+	glUniform1f(glGetUniformLocation(p, "LightSource[3].linearAttenuation"), lightsource[2].linearAttenuation);
+	glUniform1f(glGetUniformLocation(p, "LightSource[3].quadraticAttenuation"), lightsource[2].quadraticAttenuation);
+	glUniform1f(iLocSpotExponent, lightsource[3].spotExponent);
+	glUniform1f(iLocSpotCutoff, lightsource[3].spotCutoff);
+	glUniform1f(iLocSpotCosCutoff, lightsource[3].spotCosCutoff);
+}
 
 void onDisplay(void)
 {
@@ -726,90 +849,6 @@ void showShaderCompileStatus(GLuint shader, GLint *shaderCompiled)
 	}
 }
 
-/*
-void setLightingSource() {
-	float PLRange = 70.0; // todo
-						  // 0: Ambient
-	lightsource[0].position[0] = 0;
-	lightsource[0].position[1] = 0;
-	lightsource[0].position[2] = -1;
-	lightsource[0].position[3] = 1;
-	lightsource[0].ambient[0] = 0.75;
-	lightsource[0].ambient[1] = 0.75;
-	lightsource[0].ambient[2] = 0.75;
-	lightsource[0].ambient[3] = 1;
-
-	// 1: directional light
-	lightsource[1].position[0] = 0;
-	lightsource[1].position[1] = 1;
-	lightsource[1].position[2] = 1;
-	lightsource[1].position[3] = 1;
-	lightsource[1].ambient[0] = 0;
-	lightsource[1].ambient[1] = 0;
-	lightsource[1].ambient[2] = 0;
-	lightsource[1].ambient[3] = 1;
-	lightsource[1].diffuse[0] = 0.8;
-	lightsource[1].diffuse[1] = 0.8;
-	lightsource[1].diffuse[2] = 0.8;
-	lightsource[1].diffuse[3] = 1;
-	lightsource[1].specular[0] = 0.8;
-	lightsource[1].specular[1] = 0.8;
-	lightsource[1].specular[2] = 0.8;
-	lightsource[1].specular[3] = 1;
-	lightsource[1].constantAttenuation = 1;
-	lightsource[1].linearAttenuation = 4.5 / PLRange;
-	lightsource[1].quadraticAttenuation = 75 / (PLRange*PLRange);
-
-	// 2: point light
-	lightsource[2].position[0] = 1;
-	lightsource[2].position[1] = 2;
-	lightsource[2].position[2] = 0;
-	lightsource[2].position[3] = 1;
-	lightsource[2].ambient[0] = 0;
-	lightsource[2].ambient[1] = 0;
-	lightsource[2].ambient[2] = 0;
-	lightsource[2].ambient[3] = 1;
-	lightsource[2].diffuse[0] = 0.8;
-	lightsource[2].diffuse[1] = 0.8;
-	lightsource[2].diffuse[2] = 0.8;
-	lightsource[2].diffuse[3] = 1;
-	lightsource[2].specular[0] = 0.8;
-	lightsource[2].specular[1] = 0.8;
-	lightsource[2].specular[2] = 0.8;
-	lightsource[2].specular[3] = 1;
-	lightsource[2].constantAttenuation = 1;
-	lightsource[2].linearAttenuation = 4.5 / PLRange;
-	lightsource[2].quadraticAttenuation = 75 / (PLRange*PLRange);
-
-	// 3: spot light
-	lightsource[3].position[0] = 0;
-	lightsource[3].position[1] = 0;
-	lightsource[3].position[2] = 1;
-	lightsource[3].position[3] = 1;
-	lightsource[3].ambient[0] = 0;
-	lightsource[3].ambient[1] = 0;
-	lightsource[3].ambient[2] = 0;
-	lightsource[3].ambient[3] = 1;
-	lightsource[3].diffuse[0] = 0.8;
-	lightsource[3].diffuse[1] = 0.8;
-	lightsource[3].diffuse[2] = 0.8;
-	lightsource[3].diffuse[3] = 1;
-	lightsource[3].specular[0] = 0.8;
-	lightsource[3].specular[1] = 0.8;
-	lightsource[3].specular[2] = 0.8;
-	lightsource[3].specular[3] = 1;
-	lightsource[3].spotDirection[0] = 0;
-	lightsource[3].spotDirection[1] = 0;
-	lightsource[3].spotDirection[2] = -2;
-	lightsource[3].spotExponent = 0.5;
-	lightsource[3].spotCutoff = 45;
-	lightsource[3].spotCosCutoff = 0.99; // 1/12 pi
-	lightsource[3].constantAttenuation = 1;
-	lightsource[3].linearAttenuation = 4.5 / PLRange;
-	lightsource[3].quadraticAttenuation = 75 / (PLRange*PLRange);
-
-}
-*/
 void setShaders()
 {
 	GLuint v, f, p;
@@ -849,187 +888,13 @@ void setShaders()
 	// link program
 	glLinkProgram(p);
 
-	iLocPosition = glGetAttribLocation(p, "av4position");
-	iLocNormal = glGetAttribLocation(p, "av3normal");
-	iLocMVP = glGetUniformLocation(p, "mvp");
-
-	iLocMDiffuse = glGetUniformLocation(p, "Material.diffuse");
-	iLocMAmbient = glGetUniformLocation(p, "Material.ambient");
-	iLocMSpecular = glGetUniformLocation(p, "Material.specular");
-	iLocMShininess = glGetUniformLocation(p, "Material.shininess");
-
-	iLocAmbientOn = glGetUniformLocation(p, "ambientOn");
-	iLocDiffuseOn = glGetUniformLocation(p, "diffuseOn");
-	iLocSpecularOn = glGetUniformLocation(p, "specularOn");
-	iLocDirectionalOn = glGetUniformLocation(p, "directionalOn");
-	iLocPointOn = glGetUniformLocation(p, "pointOn");
-	iLocSpotOn = glGetUniformLocation(p, "spotOn");
-	iLocNormalTransform = glGetUniformLocation(p, "NormalTransMatrix");
-	iLocModelTransform = glGetUniformLocation(p, "ModelTransMatrix");
-	iLocViewTransform = glGetUniformLocation(p, "ViewTransMatrix");
-	iLocEyePosition = glGetUniformLocation(p, "eyePos");
-	iLocPerPixelLighting = glGetUniformLocation(p, "perPixelOn");
-
-	iLocPointPosition = glGetUniformLocation(p, "LightSource[2].position");
-	iLocSpotPosition = glGetUniformLocation(p, "LightSource[3].position");
-	iLocSpotExponent = glGetUniformLocation(p, "LightSource[3].spotExponent");
-	iLocSpotCutoff = glGetUniformLocation(p, "LightSource[3].spotCutoff");
-	iLocSpotCosCutoff = glGetUniformLocation(p, "LightSource[3].spotCosCutoff");
-
 	glUseProgram(p);
 
 	// pass lightsource parameters to shader
-
-
 	//setLightingSource();
 
-	float LightSource_0_pos[] = {
-		lightsource[0].position[0],
-		lightsource[0].position[1],
-		lightsource[0].position[2],
-		lightsource[0].position[3],
-	};
-
-	float LightSource_0_amb[] = {
-		lightsource[0].ambient[0],
-		lightsource[0].ambient[1],
-		lightsource[0].ambient[2],
-		lightsource[0].ambient[3],
-	};
-
-
-	//glUniform4fv(glGetUniformLocation(p, "LightSource[0].position"), 1, lightsource[0].position);
-	//glUniform4fv(glGetUniformLocation(p, "LightSource[0].ambient"), 1, lightsource[0].ambient);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[0].position"), 1, LightSource_0_pos);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[0].ambient"), 1, LightSource_0_amb);
-
-	float LightSource_1_pos[] = {
-		lightsource[1].position[0],
-		lightsource[1].position[1],
-		lightsource[1].position[2],
-		lightsource[1].position[3],
-	};
-	float LightSource_1_amb[] = {
-		lightsource[1].ambient[0],
-		lightsource[1].ambient[1],
-		lightsource[1].ambient[2],
-		lightsource[1].ambient[3],
-	};
-	float LightSource_1_diff[] = {
-		lightsource[1].diffuse[0],
-		lightsource[1].diffuse[1],
-		lightsource[1].diffuse[2],
-		lightsource[1].diffuse[3],
-	};
-	float LightSource_1_spec[] = {
-		lightsource[1].specular[0],
-		lightsource[1].specular[1],
-		lightsource[1].specular[2],
-		lightsource[1].specular[3],
-	};
-
-	/*
-		glUniform4fv(glGetUniformLocation(p, "LightSource[1].position"), 1, lightsource[1].position);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].ambient"), 1, lightsource[1].ambient);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].diffuse"), 1, lightsource[1].diffuse);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].specular"), 1, lightsource[1].specular);
-	*/
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].position"), 1, LightSource_1_pos);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].ambient"), 1, LightSource_1_amb);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].diffuse"), 1, LightSource_1_diff);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].specular"), 1, LightSource_1_spec);
-	glUniform1f(glGetUniformLocation(p, "LightSource[1].constantAttenuation"), lightsource[1].constantAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[1].linearAttenuation"), lightsource[1].linearAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[1].quadraticAttenuation"), lightsource[1].quadraticAttenuation);
-
-	float LightSource_2_pos[] = {
-		lightsource[2].position[0],
-		lightsource[2].position[1],
-		lightsource[2].position[2],
-		lightsource[2].position[3],
-	};
-	float LightSource_2_amb[] = {
-		lightsource[2].ambient[0],
-		lightsource[2].ambient[1],
-		lightsource[2].ambient[2],
-		lightsource[2].ambient[3],
-	};
-	float LightSource_2_diff[] = {
-		lightsource[2].diffuse[0],
-		lightsource[2].diffuse[1],
-		lightsource[2].diffuse[2],
-		lightsource[2].diffuse[3],
-	};
-	float LightSource_2_spec[] = {
-		lightsource[2].specular[0],
-		lightsource[2].specular[1],
-		lightsource[2].specular[2],
-		lightsource[2].specular[3],
-	};
-
-	/*
-		glUniform4fv(iLocPointPosition, 1, lightsource[2].position);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].ambient"), 1, lightsource[2].ambient);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].diffuse"), 1, lightsource[2].diffuse);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].specular"), 1, lightsource[2].specular);
-	*/
-	glUniform4fv(iLocPointPosition, 1, LightSource_2_pos);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].ambient"), 1, LightSource_2_amb);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].diffuse"), 1, LightSource_2_diff);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].specular"), 1, LightSource_2_spec);
-	glUniform1f(glGetUniformLocation(p, "LightSource[2].constantAttenuation"), lightsource[2].constantAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[2].linearAttenuation"), lightsource[2].linearAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[2].quadraticAttenuation"), lightsource[2].quadraticAttenuation);
-
-	float LightSource_3_pos[] = {
-		lightsource[3].position[0],
-		lightsource[3].position[1],
-		lightsource[3].position[2],
-		lightsource[3].position[3],
-	};
-	float LightSource_3_amb[] = {
-		lightsource[3].ambient[0],
-		lightsource[3].ambient[1],
-		lightsource[3].ambient[2],
-		lightsource[3].ambient[3],
-	};
-	float LightSource_3_diff[] = {
-		lightsource[3].diffuse[0],
-		lightsource[3].diffuse[1],
-		lightsource[3].diffuse[2],
-		lightsource[3].diffuse[3],
-	};
-	float LightSource_3_spec[] = {
-		lightsource[3].specular[0],
-		lightsource[3].specular[1],
-		lightsource[3].specular[2],
-		lightsource[3].specular[3],
-	};
-	float LightSource_3_spotDir[] = {
-		lightsource[3].spotDirection[0],
-		lightsource[3].spotDirection[1],
-		lightsource[3].spotDirection[2],
-		lightsource[3].spotDirection[3],
-	};
-
-	/*
-		glUniform4fv(iLocSpotPosition, 1, lightsource[3].position);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[3].ambient"), 1, lightsource[3].ambient);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[3].diffuse"), 1, lightsource[3].diffuse);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[3].specular"), 1, lightsource[3].specular);
-	glUniform3fv(glGetUniformLocation(p, "LightSource[3].spotDirection"), 1, lightsource[3].spotDirection);
-	*/
-	glUniform4fv(iLocSpotPosition, 1, LightSource_3_pos);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[3].ambient"), 1, LightSource_3_amb);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[3].diffuse"), 1, LightSource_3_diff);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[3].specular"), 1, LightSource_3_spec);
-	glUniform3fv(glGetUniformLocation(p, "LightSource[3].spotDirection"), 1, LightSource_3_spotDir);
-	glUniform1f(glGetUniformLocation(p, "LightSource[3].constantAttenuation"), lightsource[2].constantAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[3].linearAttenuation"), lightsource[2].linearAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[3].quadraticAttenuation"), lightsource[2].quadraticAttenuation);
-	glUniform1f(iLocSpotExponent, lightsource[3].spotExponent);
-	glUniform1f(iLocSpotCutoff, lightsource[3].spotCutoff);
-	glUniform1f(iLocSpotCosCutoff, lightsource[3].spotCosCutoff);
+	setUniformVariables(p);
+	
 
 
 }
@@ -1166,43 +1031,62 @@ void onKeyboard(unsigned char key, int x, int y)
 		break;
 	case 'q':
 	case 'Q':
-		directionalOn = (directionalOn + 1) % 2;
+		//directionalOn = (directionalOn + 1) % 2;
+
+		directionalOn = (directionalOn == 1) ? 0 : 1;
+
 		printf("Turn %s directional light\n", directionalOn ? "ON" : "OFF");
 		printStatus();
 		break;
 	case 'w':
-		pointOn = (pointOn + 1) % 2;
+		//pointOn = (pointOn + 1) % 2;
+
+		pointOn = (pointOn == 1) ? 0 : 1;
+
 		printf("Turn %s point light\n", pointOn ? "ON" : "OFF");
 		printStatus();
 		break;
 	case 'e':
 	case 'E':
 
+		/*
 		if (spotOn == 0) {
 			spotOn = 1;
 		}
 		else {
 			spotOn = 0;
 		}
+		*/
+		spotOn = (spotOn == 1) ? 0 : 1;;
+
+
+
 		printf("Turn %s spot light\n", spotOn ? "ON" : "OFF");
 		printStatus();
 		break;
 	case 'a':
 	case 'A':
 
-		ambientOn = (ambientOn + 1) % 2;
+		//ambientOn = (ambientOn + 1) % 2;
+		ambientOn = (ambientOn == 1) ? 0 : 1;
+
 		printf("Turn %s ambient effect\n", ambientOn ? "ON" : "OFF");
 		printStatus();
 		break;
 	case 's':
 	case 'S':
-		diffuseOn = (diffuseOn + 1) % 2;
+		//diffuseOn = (diffuseOn + 1) % 2;
+		
+		diffuseOn = (diffuseOn == 1) ? 0 : 1;
+
 		printf("Turn %s diffuse effect\n", diffuseOn ? "ON" : "OFF");
 		printStatus();
 		break;
 	case 'd':
 	case 'D':
-		specularOn = (specularOn + 1) % 2;
+		//specularOn = (specularOn + 1) % 2;
+		specularOn = (specularOn == 1) ? 0 : 1;
+
 		printf("Turn %s specular effect\n", specularOn ? "ON" : "OFF");
 		printStatus();
 		break;
@@ -1254,7 +1138,10 @@ void onKeyboard(unsigned char key, int x, int y)
 	case 'f':
 	case 'F':
 
-		perPixelOn = (perPixelOn + 1) % 2;
+		perPixelOn = (perPixelOn == 1) ? 0 : 1;
+
+		//perPixelOn = (perPixelOn + 1) % 2;
+
 		if (perPixelOn == 0) {
 			printf("switch to vertex lighting\n");
 		}
@@ -1268,6 +1155,8 @@ void onKeyboard(unsigned char key, int x, int y)
 
 void onKeyboardSpecial(int key, int x, int y) {
 	//printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
+
+	//move the directioal light position
 	switch (key)
 	{
 	case GLUT_KEY_LEFT:
