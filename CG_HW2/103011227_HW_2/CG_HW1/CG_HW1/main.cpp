@@ -97,10 +97,10 @@ camera main_camera;
 //GLfloat* normals; // index from 0 - 9 * group->numtriangles-1 is group 1's normals, and so on
 //Matrix4 N;
 
-float xmin = -1.0, xmax = 1.0, ymin = -1.0, ymax = 1.0, znear = 1.0, zfar = 3.0; // zfar/znear should be positive
+//float xmin = -1.0, xmax = 1.0, ymin = -1.0, ymax = 1.0, znear = 1.0, zfar = 3.0; // zfar/znear should be positive
 Vector3 eyePos = Vector3(0, 0, 2);
-Vector3 centerPos = Vector3(0, 0, 0);
-Vector3 upVec = Vector3(0, 1, 0);// in fact, this vector should be called as P1P3
+//Vector3 centerPos = Vector3(0, 0, 0);
+//Vector3 upVec = Vector3(0, 1, 0);// in fact, this vector should be called as P1P3
 
 int ambientOn = 1, diffuseOn = 1, specularOn = 1;
 int directionalOn = 0, pointOn = 0, spotOn = 0;
@@ -131,7 +131,7 @@ struct LightSourceParameters {
 	Vector4 diffuse;
 	Vector4 specular;
 	Vector4 position;
-	Vector4 halfVector;
+	Vector4 halfVector; //normalized vector between viewpoint and light vector
 	Vector3 spotDirection;
 	float spotExponent;
 	float spotCutoff; // (range: [0.0,90.0], 180.0)
@@ -297,6 +297,8 @@ void setPerspective()
 }
 
 
+/*
+
 
 
 Matrix4 getPerpectiveMatrix() {
@@ -312,11 +314,13 @@ Matrix4 getPerpectiveMatrix() {
 		0, 0, -1, 0
 	);
 }
+*/
 
+/*
 Matrix4 getViewTransMatrix() {
-	/*
-	use global parameter eyePos, centerPos, upVec to compute Viewing Transformation Matrix
-	*/
+	
+	//use global parameter eyePos, centerPos, upVec to compute Viewing Transformation Matrix
+	
 	Vector3 P1P2 = centerPos - eyePos;
 	Vector3 P1P3 = upVec;
 	Vector3 Rz = P1P2.normalize();
@@ -339,6 +343,7 @@ Matrix4 getViewTransMatrix() {
 	return Rv*Rt;
 }
 
+*/
 
 Matrix4 myRotateMatrix(float ax, float ay, float az)
 {
@@ -586,10 +591,11 @@ void passMatrixToShader(GLint iLoc, Matrix4 matrix) {
 }
 
 void passVector3ToShader(GLint iLoc, Vector3 vector) {
-	GLfloat vec[3];
-	vec[0] = vector[0];
-	vec[1] = vector[1];
-	vec[2] = vector[2];
+	GLfloat vec[3] = {
+	vec[0] = vector[0],
+	vec[1] = vector[1],
+	vec[2] = vector[2]
+	};
 	glUniform3fv(iLoc, 1, vec);
 }
 
@@ -653,7 +659,9 @@ void onDisplay(void)
 	passMatrixToShader(iLocViewTransform, view_matrix);
 	passMatrixToShader(iLocModelTransform, M);
 
-	passVector3ToShader(iLocEyePosition, eyePos);
+
+	passVector3ToShader(iLocEyePosition, main_camera.position);
+	//passVector3ToShader(iLocEyePosition, eyePos);
 
 	// light source parameters which may change
 
@@ -717,6 +725,8 @@ void showShaderCompileStatus(GLuint shader, GLint *shaderCompiled)
 		free(errorLog);
 	}
 }
+
+/*
 void setLightingSource() {
 	float PLRange = 70.0; // todo
 						  // 0: Ambient
@@ -799,7 +809,7 @@ void setLightingSource() {
 	lightsource[3].quadraticAttenuation = 75 / (PLRange*PLRange);
 
 }
-
+*/
 void setShaders()
 {
 	GLuint v, f, p;
@@ -869,7 +879,9 @@ void setShaders()
 	glUseProgram(p);
 
 	// pass lightsource parameters to shader
-	setLightingSource();
+
+
+	//setLightingSource();
 
 	float LightSource_0_pos[] = {
 		lightsource[0].position[0],
@@ -1312,6 +1324,91 @@ void initParameter()
 
 	setViewingMatrix();
 	setOrthogonal();	//set default projection matrix as orthogonal matrix
+
+
+	//Hw2
+
+	//float PLRange = 70.0; // todo
+						  // 0: Ambient
+	lightsource[0].position[0] = 0;
+	lightsource[0].position[1] = 0;
+	lightsource[0].position[2] = -1;
+	lightsource[0].position[3] = 1;
+	lightsource[0].ambient[0] = 0.75;
+	lightsource[0].ambient[1] = 0.75;
+	lightsource[0].ambient[2] = 0.75;
+	lightsource[0].ambient[3] = 1;
+
+	// 1: directional light
+	lightsource[1].position[0] = 0;
+	lightsource[1].position[1] = 1;
+	lightsource[1].position[2] = 1;
+	lightsource[1].position[3] = 1;
+	lightsource[1].ambient[0] = 0.15;
+	lightsource[1].ambient[1] = 0.15;
+	lightsource[1].ambient[2] = 0.15;
+	lightsource[1].ambient[3] = 1.0;
+	lightsource[1].diffuse[0] = 1.0;
+	lightsource[1].diffuse[1] = 1.0;
+	lightsource[1].diffuse[2] = 1.0;
+	lightsource[1].diffuse[3] = 1;
+	lightsource[1].specular[0] = 1;
+	lightsource[1].specular[1] = 1;
+	lightsource[1].specular[2] = 1;
+	lightsource[1].specular[3] = 1;
+	lightsource[1].constantAttenuation = 0.05;
+	lightsource[1].linearAttenuation = 0.3;
+	lightsource[1].quadraticAttenuation = 0.6;
+
+	// 2: point light
+	lightsource[2].position[0] = 1;
+	lightsource[2].position[1] = 2;
+	lightsource[2].position[2] = 0;
+	lightsource[2].position[3] = 1;
+	lightsource[2].ambient[0] = 0.15;
+	lightsource[2].ambient[1] = 0.15;
+	lightsource[2].ambient[2] = 0.15;
+	lightsource[2].ambient[3] = 1.0;
+	lightsource[2].diffuse[0] = 1;
+	lightsource[2].diffuse[1] = 1;
+	lightsource[2].diffuse[2] = 1;
+	lightsource[2].diffuse[3] = 1;
+	lightsource[2].specular[0] = 1;
+	lightsource[2].specular[1] = 1;
+	lightsource[2].specular[2] = 1;
+	lightsource[2].specular[3] = 1;
+	lightsource[2].constantAttenuation = 0.05;
+	lightsource[2].linearAttenuation = 0.3;
+	lightsource[2].quadraticAttenuation = 0.6;
+
+	// 3: spot light
+	lightsource[3].position[0] = 0;
+	lightsource[3].position[1] = 0;
+	lightsource[3].position[2] = 1;
+	lightsource[3].position[3] = 1;
+	lightsource[3].ambient[0] = 0.15;
+	lightsource[3].ambient[1] = 0.15;
+	lightsource[3].ambient[2] = 0.15;
+	lightsource[3].ambient[3] = 1;
+	lightsource[3].diffuse[0] = 1;
+	lightsource[3].diffuse[1] = 1;
+	lightsource[3].diffuse[2] = 1;
+	lightsource[3].diffuse[3] = 1;
+	lightsource[3].specular[0] = 1;
+	lightsource[3].specular[1] = 1;
+	lightsource[3].specular[2] = 1;
+	lightsource[3].specular[3] = 1;
+	lightsource[3].spotDirection[0] = 0;
+	lightsource[3].spotDirection[1] = 0;
+	lightsource[3].spotDirection[2] = -2;
+	lightsource[3].spotExponent = 0.5;
+	lightsource[3].spotCutoff = 45;
+	lightsource[3].spotCosCutoff = 0.99; // 1/12 pi
+	lightsource[3].constantAttenuation = 0.05;
+	lightsource[3].linearAttenuation = 0.3;
+	lightsource[3].quadraticAttenuation = 0.6;
+
+
 }
 
 
