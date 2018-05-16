@@ -100,33 +100,20 @@ vec4 getSpotLight(LightSourceParameters lightSource){
 	float effect = pow(max(dot(L,-lightSource.spotDirection),0.0f),lightSource.spotExponent);
 	float fatt = 1.0f/(lightSource.constantAttenuation + lightSource.linearAttenuation * distance + lightSource.quadraticAttenuation * distance * distance);
 
-	if(spotOn == 2 || spotOn == 3){
-		lightSource.spotCosCutoff = 0.0f;
-		// 2: directional light effect
-		// 3: point light effect
-	}
 	if(theta >= lightSource.spotCosCutoff){
 		if(diffuseOn == 1 && dot(L,N)>=0 ){
 			vec4 diffuse = lightSource.diffuse * Material.diffuse * dot(L,N);
 			diffuse *= effect;
-
-			if(spotOn == 3){
-				diffuse *= fatt;
-			}
 			diffuse = clamp(diffuse,0.0f,1.0f);
 			color += diffuse;
 		}
 		if(specularOn == 1){
-
 			
 			vec3 H= normalize(L+V);
 			float spec=pow(max( dot(N,H),0.0f ) ,20.0f );
 
 			vec4 specular = Material.specular * lightSource.specular * spec;
 			specular *= fatt;
-			if(spotOn == 3){
-				specular *= fatt;
-			}
 			specular = clamp(specular,0.0f,1.0f);
 			color += specular;
 
@@ -143,15 +130,10 @@ void main() {
 			vec4 vv4ambient_D = Material.ambient * LightSource[0].ambient;
 			color += vv4ambient_D;
 		}
-		if(directionalOn == 1){
-			color += getDirectionalLight(LightSource[1]);
-		}
-		if(pointOn == 1){
-			color += getPointLight(LightSource[2]);
-		}
-		if(spotOn != 0){
-			color += getSpotLight(LightSource[3]);
-		}
+		
+		color+=(directionalOn==1)?getDirectionalLight(LightSource[1]):0;
+		color+=(pointOn==1)?getPointLight(LightSource[2]):0;
+		color+=(spotOn==1)?getSpotLight(LightSource[3]):0;
 		gl_FragColor = color;
 	}else{
 		gl_FragColor = vv4color;

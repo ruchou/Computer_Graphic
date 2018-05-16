@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-
+#include <iomanip>
 
 #include <GL/glew.h>
 #include <freeglut/glut.h>
@@ -108,6 +108,7 @@ int timeInterval = 33;
 Matrix4 R;
 float rotateSpeed = 300.0; // it is the reciprocal of actual rotate speed
 
+bool crazy_speed = false;
 
 //windows
 //int windowHeight, windowWidth;
@@ -315,6 +316,9 @@ void timerFunc(int timer_value)
 {
 	if (isRotate)
 		rotateVal += 0.1f;
+
+	if (crazy_speed)
+		rotateVal += 5.0f;
 
 //	float t = glutGet(GLUT_ELAPSED_TIME);
 //	float offsetTime = t / rotateSpeed;
@@ -834,11 +838,16 @@ void setShaders()
 
 void printStatus() {
 	// print current status of lighting
-	printf("Directional light = %s, Point light = %s, Spot light = %s\n",
-		directionalOn ? "ON" : "OFF", pointOn ? "ON" : "OFF", spotOn ? "ON" : "OFF");
-	printf("Ambient = %s, Diffuse = %s, Specular = %s\n",
-		ambientOn ? "ON" : "OFF", diffuseOn ? "ON" : "OFF", specularOn ? "ON" : "OFF");
-	printf("\n");
+	cout << setw(20) << "Directional light = " << (directionalOn == 1) ;
+	cout << setw(20) << "Point light = " << (pointOn == 1);
+	cout << setw(20) << "Spot light = " << (spotOn == 1) ;
+	cout << endl;
+
+	cout << setw(20) << "Ambient =  " << (ambientOn == 1);
+	cout << setw(20) << "Diffuse = " << (diffuseOn == 1) ;
+	cout << setw(20) << "Specular = " << (specularOn == 1) ;
+	cout << endl;
+
 }
 
 void onMouse(int who, int state, int x, int y)
@@ -947,14 +956,14 @@ void onKeyboard(unsigned char key, int x, int y)
 	case 'Z':
 		// switch to the previous model
 		cur_idx = (cur_idx + filenames.size() - 1) % filenames.size();
-		cout << "Current model is" << cur_idx << endl;
+		cout << "Switch to model " << cur_idx << endl;
 		break;
 	case 'x':
 	case 'X':
 
 		// switch to the next model
 		cur_idx = (cur_idx + 1) % filenames.size();
-		cout << "Current model is" << cur_idx << endl;
+		cout << "Switch to model " << cur_idx << endl;
 
 		break;
 
@@ -968,7 +977,6 @@ void onKeyboard(unsigned char key, int x, int y)
 		cout << "2.1: Different lighting parameter can exist at the same time" << endl;
 		cout << "3:Type 'z' 'x' to switch models " << endl;
 		cout << "4:Type 'r' to  determine whether the model rotate or not " << endl;
-		cout << "5:Type 'c' to change the spot light into another type" << endl;
 		printf("-----------Instruction Manual---------\n");
 		break;
 	case 'q':
@@ -1017,10 +1025,12 @@ void onKeyboard(unsigned char key, int x, int y)
 		isRotate = !isRotate;
 		printf("Turn %s auto rotate\n", isRotate ? "ON" : "OFF");
 		break;
-
+		/*
 	case 'C':
 	case 'c':
-		switch (spotOn) {
+
+
+				switch (spotOn) {
 		case 1:
 			spotOn = 2;
 			printf("change spot light into directional mode\n");
@@ -1035,6 +1045,8 @@ void onKeyboard(unsigned char key, int x, int y)
 			break;
 		}
 		break;
+		*/
+
 	case 'f':
 	case 'F':
 
@@ -1073,9 +1085,10 @@ void onKeyboard(unsigned char key, int x, int y)
 		cout << "iLocSpecularOn: " << iLocSpecularOn << endl;
 
 
-
 		break;
-
+	case 'p':
+		crazy_speed = !crazy_speed;
+		break;
 
 	}
 
