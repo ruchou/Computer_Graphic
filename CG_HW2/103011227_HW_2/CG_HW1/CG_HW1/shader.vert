@@ -76,18 +76,7 @@ vec4 calcDirectionalLight(LightSourceParameters lightSource){
 			vec4 specular = Material.specular * lightSource.specular * spec;
 			specular = clamp(specular,0.0f,1.0f);
 			color += specular;
-		}		
-
-		/*
-		vec3 R = normalize(reflect(-L,N));
-
-		if(dot(V,R)>0){
-			float spec = pow(dot(V,R),50.0f);
-			vec4 specular = Material.specular * lightSource.specular * spec;
-			specular = clamp(specular,0.0f,1.0f);
-			color += specular;
 		}
-		*/
 
 	}
 
@@ -97,14 +86,12 @@ vec4 calcDirectionalLight(LightSourceParameters lightSource){
 vec4 calcPointLight(LightSourceParameters lightSource){
 	vec4 color = vec4(0.0f,0.0f,0.0f,0.0f);
 	float distance = length(lightSource.position.xyz-vv4position.xyz);
-	float attenuation = 1.0f/(lightSource.constantAttenuation 
-				+ lightSource.linearAttenuation * distance 
-				+ lightSource.quadraticAttenuation * distance * distance);
+	float fatt = 1.0f/(lightSource.constantAttenuation + lightSource.linearAttenuation * distance + lightSource.quadraticAttenuation * distance * distance);
 	vec3 L = normalize(lightSource.position.xyz-vv4position.xyz);
 
 	if(diffuseOn == 1 && dot(L,N)>=0 ){
 		vec4 diffuse = lightSource.diffuse * Material.diffuse * dot(L,N);
-		diffuse *= attenuation;
+		diffuse *= fatt;
 		diffuse = clamp(diffuse,0.0f,1.0f);
 		color += diffuse;
 	}
@@ -114,18 +101,10 @@ vec4 calcPointLight(LightSourceParameters lightSource){
 		if(dot(N,H)>0){
 			float spec=pow(dot(N,H),50.0f);
 			vec4 specular = Material.specular * lightSource.specular * spec;
-			specular *= attenuation;
+			specular *= fatt;
 			specular = clamp(specular,0.0f,1.0f);
 			color += specular;
 		}		
-		/*
-		vec3 R = normalize(reflect(-L,N));
-		float spec = pow(max(dot(V,R),0.0f),65.0f);
-		vec4 specular = Material.specular * lightSource.specular * spec;
-		specular *= attenuation;
-		specular = clamp(specular,0.0f,1.0f);
-		color += specular;
-		*/
 	}
 
 	return color;
@@ -137,9 +116,8 @@ vec4 calcSpotLight(LightSourceParameters lightSource){
 	vec3 L = normalize(lightSource.position.xyz-vv4position.xyz);
 	float theta = dot(L,normalize(-lightSource.spotDirection));
 	float effect = pow(max(dot(L,-lightSource.spotDirection),0.0f),lightSource.spotExponent);
-	float attenuation = 1.0f/(lightSource.constantAttenuation 
-				+ lightSource.linearAttenuation * distance 
-				+ lightSource.quadraticAttenuation * distance * distance);
+	float fatt = 1.0f/(lightSource.constantAttenuation + lightSource.linearAttenuation * distance + lightSource.quadraticAttenuation * distance * distance);
+
 	if(spotOn == 2 || spotOn == 3){
 		lightSource.spotCosCutoff = 0.0f;
 		// 2: directional light effect
@@ -151,23 +129,21 @@ vec4 calcSpotLight(LightSourceParameters lightSource){
 			diffuse *= effect;
 
 			if(spotOn == 3){
-				diffuse *= attenuation;
+				diffuse *= fatt;
 			}
 			diffuse = clamp(diffuse,0.0f,1.0f);
 			color += diffuse;
 		}
 		if(specularOn == 1){
 
-			//vec3 R = normalize(reflect(-L,N));
-		//	float spec = pow(max(dot(V,R),0.0f),20.0f);
 			
 			vec3 H= normalize(L+V);
 			float spec=pow(max( dot(N,H),0.0f ) ,20.0f );
 
 			vec4 specular = Material.specular * lightSource.specular * spec;
-			specular *= effect;
+			specular *= fatt;
 			if(spotOn == 3){
-				specular *= attenuation;
+				specular *= fatt;
 			}
 			specular = clamp(specular,0.0f,1.0f);
 			color += specular;

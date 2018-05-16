@@ -521,29 +521,6 @@ void onIdle()
 	glutPostRedisplay();
 }
 
-void passMatrixToShader(GLint iLoc, Matrix4 matrix) {
-	
-	/*
-	// pass 4x4 matrix to shader, row-major --> column major
-	GLfloat MATRIX[16];
-	// row-major ---> column-major
-	MATRIX[0] = matrix[0];  MATRIX[4] = matrix[1];   MATRIX[8] = matrix[2];    MATRIX[12] = matrix[3];
-	MATRIX[1] = matrix[4];  MATRIX[5] = matrix[5];   MATRIX[9] = matrix[6];    MATRIX[13] = matrix[7];
-	MATRIX[2] = matrix[8];  MATRIX[6] = matrix[9];   MATRIX[10] = matrix[10];   MATRIX[14] = matrix[11];
-	MATRIX[3] = matrix[12]; MATRIX[7] = matrix[13];  MATRIX[11] = matrix[14];   MATRIX[15] = matrix[15];
-	*/
-
-	glUniformMatrix4fv(iLoc, 1, GL_FALSE, matrix.getTranspose());
-}
-
-void passVector3ToShader(GLint iLoc, Vector3 vector) {
-	GLfloat vec[3] = {
-	vec[0] = vector[0],
-	vec[1] = vector[1],
-	vec[2] = vector[2]
-	};
-	glUniform3fv(iLoc, 1, vec);
-}
 
 void setUniformVariables(GLuint p) {
 
@@ -589,9 +566,6 @@ void setUniformVariables(GLuint p) {
 		lightsource[0].ambient[3],
 	};
 
-
-	//glUniform4fv(glGetUniformLocation(p, "LightSource[0].position"), 1, lightsource[0].position);
-	//glUniform4fv(glGetUniformLocation(p, "LightSource[0].ambient"), 1, lightsource[0].ambient);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[0].position"), 1, LightSource_0_pos);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[0].ambient"), 1, LightSource_0_amb);
 
@@ -620,12 +594,7 @@ void setUniformVariables(GLuint p) {
 		lightsource[1].specular[3],
 	};
 
-	/*
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].position"), 1, lightsource[1].position);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].ambient"), 1, lightsource[1].ambient);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].diffuse"), 1, lightsource[1].diffuse);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].specular"), 1, lightsource[1].specular);
-	*/
+
 	glUniform4fv(glGetUniformLocation(p, "LightSource[1].position"), 1, LightSource_1_pos);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[1].ambient"), 1, LightSource_1_amb);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[1].diffuse"), 1, LightSource_1_diff);
@@ -659,12 +628,7 @@ void setUniformVariables(GLuint p) {
 		lightsource[2].specular[3],
 	};
 
-	/*
-	glUniform4fv(iLocPointPosition, 1, lightsource[2].position);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].ambient"), 1, lightsource[2].ambient);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].diffuse"), 1, lightsource[2].diffuse);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].specular"), 1, lightsource[2].specular);
-	*/
+
 	glUniform4fv(iLocPointPosition, 1, LightSource_2_pos);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[2].ambient"), 1, LightSource_2_amb);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[2].diffuse"), 1, LightSource_2_diff);
@@ -704,13 +668,7 @@ void setUniformVariables(GLuint p) {
 		lightsource[3].spotDirection[3],
 	};
 
-	/*
-	glUniform4fv(iLocSpotPosition, 1, lightsource[3].position);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[3].ambient"), 1, lightsource[3].ambient);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[3].diffuse"), 1, lightsource[3].diffuse);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[3].specular"), 1, lightsource[3].specular);
-	glUniform3fv(glGetUniformLocation(p, "LightSource[3].spotDirection"), 1, lightsource[3].spotDirection);
-	*/
+	
 	glUniform4fv(iLocSpotPosition, 1, LightSource_3_pos);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[3].ambient"), 1, LightSource_3_amb);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[3].diffuse"), 1, LightSource_3_diff);
@@ -738,25 +696,7 @@ void onDisplay(void)
 	Matrix4 S;
 	Matrix4 MVP;
 
-	/*
-	if (isRotate ==false) {
-		R = Matrix4(1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1);
-	}
-	else {
-		float t = glutGet(GLUT_ELAPSED_TIME);
-		float offsetTime = t / rotateSpeed;
-		R = Matrix4(
-			cos(offsetTime), 0, sin(offsetTime), 0,
-			0, 1, 0, 0,
-			-sin(offsetTime), 0, cos(offsetTime), 0,
-			0, 0, 0, 1);
-		// rotate around
-	}
 
-	*/
 	Matrix4 M = R*models[cur_idx].N;
 	//Matrix4 V = getViewTransMatrix();
 	//Matrix4 P = getPerpectiveMatrix();
@@ -777,14 +717,21 @@ void onDisplay(void)
 	glUniform1i(iLocPerPixelLighting, perPixelOn);
 
 	// matrix parameters
-	passMatrixToShader(iLocMVP, MVP);
-	passMatrixToShader(iLocNormalTransform,models[cur_idx].N );
-	passMatrixToShader(iLocViewTransform, view_matrix);
-	passMatrixToShader(iLocModelTransform, M);
+
+	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, MVP.getTranspose());
+	glUniformMatrix4fv(iLocNormalTransform, 1, GL_FALSE, models[cur_idx].N.getTranspose());
+	glUniformMatrix4fv(iLocViewTransform, 1, GL_FALSE, view_matrix.getTranspose());
+	glUniformMatrix4fv(iLocModelTransform, 1, GL_FALSE, M.getTranspose());
 
 
-	passVector3ToShader(iLocEyePosition, main_camera.position);
-	//passVector3ToShader(iLocEyePosition, eyePos);
+	GLfloat main_camera_pos_vec[3] = {
+		main_camera.position.x,
+		main_camera.position.y,
+		main_camera.position.z
+	};
+	glUniform3fv(iLocEyePosition, 1, main_camera_pos_vec);
+
+
 
 	// light source parameters which may change
 
@@ -802,9 +749,6 @@ void onDisplay(void)
 	};
 
 
-	
-	//glUniform4fv(iLocPointPosition, 1, lightsource[2].position);
-	//glUniform4fv(iLocSpotPosition, 1, lightsource[3].position);
 	
 	glUniform4fv(iLocPointPosition, 1,PointPos );
 	glUniform4fv(iLocSpotPosition, 1, SpotPos);
@@ -970,24 +914,38 @@ void onMouse(int who, int state, int x, int y)
 void onMouseMotion(int x, int y)
 {
 	//printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
-}
-
-void onPassiveMouseMotion(int x, int y) {
-	// move the position of spot light
+	
+	/*
+		float x_pos, y_pos;
 	if (spotOn != 0) {
 
-		/*
-		float wx = (float)x*2.0 / (float)windowWidth - 1.0;
-		float wy = -(float)y*2.0 / (float)windowHeight + 1.0;
-		*/
-		float wx = (float)x*2.0 / (float)800 - 1.0;
-		float wy = -(float)y*2.0 / (float)800 + 1.0;
-		// printf("new x = %f, y= %f\n", wx, wy);
-		lightsource[3].position[0] = wx;
-		lightsource[3].position[1] = wy;
+		x_pos= (float)x*(1.0 / 400.0)-1.0;
+		y_pos=-(float)y*(1.0 / 400.0)+1.0;
+		lightsource[3].position[0] = x_pos;
+		lightsource[3].position[1] = y_pos;
+
 	}
+	
+	*/
+
+
 
 }
+
+
+void onPassiveMouseMotion(int x, int y) {
+	float x_pos, y_pos;
+	if (spotOn != 0) {
+
+		x_pos = (float)x*(1.0 / 400.0) - 1.0;
+		y_pos = -(float)y*(1.0 / 400.0) + 1.0;
+		lightsource[3].position[0] = x_pos;
+		lightsource[3].position[1] = y_pos;
+
+	}
+}
+
+
 
 void onKeyboard(unsigned char key, int x, int y)
 {
@@ -1001,33 +959,29 @@ void onKeyboard(unsigned char key, int x, int y)
 	case 'Z':
 		// switch to the previous model
 		cur_idx = (cur_idx + filenames.size() - 1) % filenames.size();
-		cout << cur_idx << endl;
-
+		cout << "Current model is" << cur_idx << endl;
 		break;
 	case 'x':
 	case 'X':
 
 		// switch to the next model
 		cur_idx = (cur_idx + 1) % filenames.size();
-		cout << cur_idx << endl;
+		cout << "Current model is" << cur_idx << endl;
 
 		break;
 
 	case 'h':
+	case 'H':
 		// show help menu
-		printf("----------Help Menu----------\n");
-		printf("press 'q' 'w' 'e' to toggle the light source\n");
-		printf("press 'a' 's' 'd' to toggle the light arrtibute\n");
-		printf("press 'z' 'x' to change model\n");
-		printf("press 'r' to toggle auto rotation\n");
-		printf("press 'v' 'b' to change the rotatation speed\n");
-		printf("press 'c' to change the spot light into another type\n");
-		printf("press 'f' to toggle per-pixel rendering\n");
-		printf("use arrow buttom to move the point light\n");
-		printf("hover mouse to move the spot light\n");
-		printf("click mouse to tune EXP\n");
-		printf("scroll mouse to tune CUT_OFF_ANGLE\n");
-		printf("----------Help Menu----------\n");
+		printf("----------Instruction Manual----------\n");
+		cout << "1:Type 'q' 'w' 'e' to toggle light to source to Direction, Point, and Spot light source" << endl;
+		cout << "1.1: Different light source can exist at the same time"<<endl;
+		cout << "2:Type 'a' 's' 'd' to toggle lighting parameter to Ambient, Diffuse, and specular  " << endl;
+		cout << "2.1: Different lighting parameter can exist at the same time" << endl;
+		cout << "3:Type 'z' 'x' to switch models " << endl;
+		cout << "4:Type 'r' to  determine whether the model rotate or not " << endl;
+		cout << "5:Type 'c' to change the spot light into another type" << endl;
+		printf("-----------Instruction Manual---------\n");
 		break;
 	case 'q':
 	case 'Q':
@@ -1048,78 +1002,36 @@ void onKeyboard(unsigned char key, int x, int y)
 		break;
 	case 'e':
 	case 'E':
-
-		/*
-		if (spotOn == 0) {
-			spotOn = 1;
-		}
-		else {
-			spotOn = 0;
-		}
-		*/
 		spotOn = (spotOn == 1) ? 0 : 1;;
-
-
-
 		printf("Turn %s spot light\n", spotOn ? "ON" : "OFF");
 		printStatus();
 		break;
 	case 'a':
 	case 'A':
-
-		//ambientOn = (ambientOn + 1) % 2;
 		ambientOn = (ambientOn == 1) ? 0 : 1;
-
 		printf("Turn %s ambient effect\n", ambientOn ? "ON" : "OFF");
 		printStatus();
 		break;
 	case 's':
-	case 'S':
-		//diffuseOn = (diffuseOn + 1) % 2;
-		
+	case 'S':		
 		diffuseOn = (diffuseOn == 1) ? 0 : 1;
-
 		printf("Turn %s diffuse effect\n", diffuseOn ? "ON" : "OFF");
 		printStatus();
 		break;
 	case 'd':
 	case 'D':
-		//specularOn = (specularOn + 1) % 2;
 		specularOn = (specularOn == 1) ? 0 : 1;
-
 		printf("Turn %s specular effect\n", specularOn ? "ON" : "OFF");
 		printStatus();
 		break;
 	case 'r':
 	case 'R':
-		//autoRotateMode = (autoRotateMode + 1) % 2;
 		isRotate = !isRotate;
-
 		printf("Turn %s auto rotate\n", isRotate ? "ON" : "OFF");
 		break;
-	/*
-	case GLUT_KEY_v:
-		if (autoRotateMode == 1) {
-			if (rotateSpeed > 50.0) {
-				printf("Speed up the auto rotation\n");
-				rotateSpeed -= 50.0;
-			}
-			else {
-				printf("Please do not try to rotate too fast\n");
-			}
-		}
-		break;
-	
-	case GLUT_KEY_b:
-		if (autoRotateMode == 1) {
-			rotateSpeed += 50.0;
-			printf("Slow down the auot rotation\n");
-		}
-		break;
-	*/
+
 	case 'C':
 	case 'c':
-
 		switch (spotOn) {
 		case 1:
 			spotOn = 2;
@@ -1140,16 +1052,46 @@ void onKeyboard(unsigned char key, int x, int y)
 
 		perPixelOn = (perPixelOn == 1) ? 0 : 1;
 
-		//perPixelOn = (perPixelOn + 1) % 2;
+		(perPixelOn==0)? printf("switch to vertex lighting\n"): printf("switch to per pixel lighting\n");
 
-		if (perPixelOn == 0) {
-			printf("switch to vertex lighting\n");
-		}
-		else {
-			printf("switch to per pixel lighting\n");
-		}
 		break;
+
+	case 'i':
+
+		cout << "-------------developer only-------------" << endl;
+		/*
+		
+		GLint iLocPosition;
+		GLint iLocNormal;
+		GLint iLocMVP;
+
+		GLint iLocMDiffuse, iLocMAmbient, iLocMSpecular, iLocMShininess;
+		GLint iLocAmbientOn, iLocDiffuseOn, iLocSpecularOn;
+		GLint iLocDirectionalOn, iLocPointOn, iLocSpotOn;
+		GLint iLocNormalTransform, iLocModelTransform, iLocViewTransform;
+		GLint iLocEyePosition;
+		GLint iLocPointPosition, iLocSpotPosition, iLocSpotExponent, iLocSpotCutoff, iLocSpotCosCutoff;
+		GLint iLocPerPixelLighting;
+		*/
+		cout << "iLocPosition: " << iLocPosition << endl;
+		cout << "iLocNormal: " << iLocNormal << endl;
+		cout << "iLocMVP: " << iLocMVP << endl;
+		cout << "iLocMDiffuse: " << iLocMDiffuse << endl;
+		cout << "iLocMAmbient: " << iLocMAmbient << endl;
+		cout << "iLocMSpecular: " << iLocMSpecular << endl;
+		cout << "iLocMShininess: " << iLocMShininess << endl;
+		cout << "iLocAmbientOn: " << iLocAmbientOn << endl;
+		cout << "iLocDiffuseOn: " << iLocDiffuseOn << endl;
+		cout << "iLocSpecularOn: " << iLocSpecularOn << endl;
+
+
+
+		break;
+
+
 	}
+
+
 	//printf("\n");
 }
 
@@ -1162,24 +1104,24 @@ void onKeyboardSpecial(int key, int x, int y) {
 	case GLUT_KEY_LEFT:
 		//printf("key: LEFT ARROW");
 		if (pointOn == 1) {
-			lightsource[2].position[0] -= 0.5;
+			lightsource[2].position[0] -= 0.2;
 		}
 		break;
 
 	case GLUT_KEY_RIGHT:
 		//printf("key: RIGHT ARROW");
 		if (pointOn == 1) {
-			lightsource[2].position[0] += 0.5;
+			lightsource[2].position[0] += 0.2;
 		}
 		break;
 	case GLUT_KEY_UP:
 		if (pointOn == 1) {
-			lightsource[2].position[1] += 0.5;
+			lightsource[2].position[1] += 0.2;
 		}
 		break;
 	case GLUT_KEY_DOWN:
 		if (pointOn == 1) {
-			lightsource[2].position[1] -= 0.5;
+			lightsource[2].position[1] -= 0.2;
 		}
 		break;
 	default:
@@ -1229,9 +1171,9 @@ void initParameter()
 	lightsource[0].ambient[3] = 1;
 
 	// 1: directional light
-	lightsource[1].position[0] = 0;
-	lightsource[1].position[1] = 1;
-	lightsource[1].position[2] = 1;
+	lightsource[1].position[0] = 3;
+	lightsource[1].position[1] = 3;
+	lightsource[1].position[2] = 3;
 	lightsource[1].position[3] = 1;
 	lightsource[1].ambient[0] = 0.15;
 	lightsource[1].ambient[1] = 0.15;
@@ -1250,8 +1192,8 @@ void initParameter()
 	lightsource[1].quadraticAttenuation = 0.6;
 
 	// 2: point light
-	lightsource[2].position[0] = 1;
-	lightsource[2].position[1] = 2;
+	lightsource[2].position[0] = 0;
+	lightsource[2].position[1] = -1;
 	lightsource[2].position[2] = 0;
 	lightsource[2].position[3] = 1;
 	lightsource[2].ambient[0] = 0.15;
@@ -1273,7 +1215,7 @@ void initParameter()
 	// 3: spot light
 	lightsource[3].position[0] = 0;
 	lightsource[3].position[1] = 0;
-	lightsource[3].position[2] = 1;
+	lightsource[3].position[2] = 2;
 	lightsource[3].position[3] = 1;
 	lightsource[3].ambient[0] = 0.15;
 	lightsource[3].ambient[1] = 0.15;
