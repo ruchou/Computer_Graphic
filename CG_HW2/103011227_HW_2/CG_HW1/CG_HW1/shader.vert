@@ -1,6 +1,7 @@
 attribute vec4 av4position;
 attribute vec3 av3normal;
 
+
 varying vec4 vv4color;
 
 struct LightSourceParameters {
@@ -35,17 +36,14 @@ uniform int specularOn;
 uniform int directionalOn;
 uniform int pointOn;
 uniform int spotOn;
-
 uniform int perPixelOn;
-
 uniform mat4 mvp;
-uniform mat4 NormalTransMatrix;
-uniform mat4 ModelTransMatrix;
-uniform mat4 ViewTransMatrix;
-
+uniform mat4 ModelTrans_inv_transpos;
+uniform mat4 ModelTrans;
 uniform vec3 eyePos;
 
-vec3 vv3normal = mat3(transpose(inverse(ModelTransMatrix)))*av3normal;
+vec3 vv3normal = mat3(ModelTrans_inv_transpos)*av3normal;
+
 
 
 varying vec4 vv4position;
@@ -58,7 +56,7 @@ varying vec3 V;
 //L = source pos - model pos
 
 
-vec4 calcDirectionalLight(LightSourceParameters lightSource){
+vec4 getDirectionalLight(LightSourceParameters lightSource){
 	vec4 color = vec4(0.0f,0.0f,0.0f,0.0f);
 	vec3 L = normalize(lightSource.position.xyz-vv4position.xyz);
 
@@ -83,7 +81,7 @@ vec4 calcDirectionalLight(LightSourceParameters lightSource){
 	return color;
 }
 
-vec4 calcPointLight(LightSourceParameters lightSource){
+vec4 getPointLight(LightSourceParameters lightSource){
 	vec4 color = vec4(0.0f,0.0f,0.0f,0.0f);
 	float distance = length(lightSource.position.xyz-vv4position.xyz);
 	float fatt = 1.0f/(lightSource.constantAttenuation + lightSource.linearAttenuation * distance + lightSource.quadraticAttenuation * distance * distance);
@@ -110,7 +108,7 @@ vec4 calcPointLight(LightSourceParameters lightSource){
 	return color;
 }
 
-vec4 calcSpotLight(LightSourceParameters lightSource){
+vec4 getSpotLight(LightSourceParameters lightSource){
 	vec4 color = vec4(0.0f,0.0f,0.0f,0.0f);
 	float distance = length(lightSource.position.xyz-vv4position.xyz);
 	vec3 L = normalize(lightSource.position.xyz-vv4position.xyz);
@@ -156,7 +154,7 @@ vec4 calcSpotLight(LightSourceParameters lightSource){
 
 void main() {
 	vv4color = vec4(0.0f,0.0f,0.0f,0.0f);
-	vv4position = ModelTransMatrix * av4position;
+	vv4position = ModelTrans * av4position;
 	N = normalize(vv3normal);
 	V = normalize(eyePos- vv4position.xyz);
 	gl_Position = mvp * av4position;
@@ -168,13 +166,13 @@ void main() {
 			vv4color += vv4ambient_D;
 		}
 		if(directionalOn == 1){
-			vv4color += calcDirectionalLight(LightSource[1]);
+			vv4color += getDirectionalLight(LightSource[1]);
 		}
 		if(pointOn == 1){
-			vv4color += calcPointLight(LightSource[2]);
+			vv4color += getPointLight(LightSource[2]);
 		}
 		if(spotOn != 0){
-			vv4color += calcSpotLight(LightSource[3]);
+			vv4color += getSpotLight(LightSource[3]);
 		}
 	}
 

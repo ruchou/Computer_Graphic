@@ -45,10 +45,11 @@ GLint iLocMVP;
 GLint iLocMDiffuse, iLocMAmbient, iLocMSpecular, iLocMShininess;
 GLint iLocAmbientOn, iLocDiffuseOn, iLocSpecularOn;
 GLint iLocDirectionalOn, iLocPointOn, iLocSpotOn;
-GLint iLocNormalTransform, iLocModelTransform, iLocViewTransform;
+GLint iLocModelTransform_inv_trans;
 GLint iLocEyePosition;
 GLint iLocPointPosition, iLocSpotPosition, iLocSpotExponent, iLocSpotCutoff, iLocSpotCosCutoff;
 GLint iLocPerPixelLighting;
+GLint iLocModelTrans;
 
 //#define numOfModels 5
 
@@ -87,20 +88,6 @@ Matrix4 project_matrix;
 
 project_setting proj;
 camera main_camera;
-
-
-
-//int modelIndex = 0;
-
-//GLMmodel* OBJ;
-//GLfloat* vertices; // index from 0 - 9 * group->numtriangles-1 is group 1's vertices, and so on
-//GLfloat* normals; // index from 0 - 9 * group->numtriangles-1 is group 1's normals, and so on
-//Matrix4 N;
-
-//float xmin = -1.0, xmax = 1.0, ymin = -1.0, ymax = 1.0, znear = 1.0, zfar = 3.0; // zfar/znear should be positive
-Vector3 eyePos = Vector3(0, 0, 2);
-//Vector3 centerPos = Vector3(0, 0, 0);
-//Vector3 upVec = Vector3(0, 1, 0);// in fact, this vector should be called as P1P3
 
 int ambientOn = 1, diffuseOn = 1, specularOn = 1;
 int directionalOn = 0, pointOn = 0, spotOn = 0;
@@ -539,9 +526,8 @@ void setUniformVariables(GLuint p) {
 	iLocDirectionalOn = glGetUniformLocation(p, "directionalOn");
 	iLocPointOn = glGetUniformLocation(p, "pointOn");
 	iLocSpotOn = glGetUniformLocation(p, "spotOn");
-	iLocNormalTransform = glGetUniformLocation(p, "NormalTransMatrix");
-	iLocModelTransform = glGetUniformLocation(p, "ModelTransMatrix");
-	iLocViewTransform = glGetUniformLocation(p, "ViewTransMatrix");
+	iLocModelTransform_inv_trans = glGetUniformLocation(p, "ModelTrans_inv_transpos");
+	iLocModelTrans = glGetUniformLocation(p, "ModelTrans");
 	iLocEyePosition = glGetUniformLocation(p, "eyePos");
 	iLocPerPixelLighting = glGetUniformLocation(p, "perPixelOn");
 
@@ -558,7 +544,6 @@ void setUniformVariables(GLuint p) {
 		lightsource[0].position[2],
 		lightsource[0].position[3],
 	};
-
 	float LightSource_0_amb[] = {
 		lightsource[0].ambient[0],
 		lightsource[0].ambient[1],
@@ -566,8 +551,6 @@ void setUniformVariables(GLuint p) {
 		lightsource[0].ambient[3],
 	};
 
-	glUniform4fv(glGetUniformLocation(p, "LightSource[0].position"), 1, LightSource_0_pos);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[0].ambient"), 1, LightSource_0_amb);
 
 	float LightSource_1_pos[] = {
 		lightsource[1].position[0],
@@ -594,15 +577,6 @@ void setUniformVariables(GLuint p) {
 		lightsource[1].specular[3],
 	};
 
-
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].position"), 1, LightSource_1_pos);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].ambient"), 1, LightSource_1_amb);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].diffuse"), 1, LightSource_1_diff);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].specular"), 1, LightSource_1_spec);
-	glUniform1f(glGetUniformLocation(p, "LightSource[1].constantAttenuation"), lightsource[1].constantAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[1].linearAttenuation"), lightsource[1].linearAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[1].quadraticAttenuation"), lightsource[1].quadraticAttenuation);
-
 	float LightSource_2_pos[] = {
 		lightsource[2].position[0],
 		lightsource[2].position[1],
@@ -627,15 +601,6 @@ void setUniformVariables(GLuint p) {
 		lightsource[2].specular[2],
 		lightsource[2].specular[3],
 	};
-
-
-	glUniform4fv(iLocPointPosition, 1, LightSource_2_pos);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].ambient"), 1, LightSource_2_amb);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].diffuse"), 1, LightSource_2_diff);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].specular"), 1, LightSource_2_spec);
-	glUniform1f(glGetUniformLocation(p, "LightSource[2].constantAttenuation"), lightsource[2].constantAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[2].linearAttenuation"), lightsource[2].linearAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[2].quadraticAttenuation"), lightsource[2].quadraticAttenuation);
 
 	float LightSource_3_pos[] = {
 		lightsource[3].position[0],
@@ -668,7 +633,25 @@ void setUniformVariables(GLuint p) {
 		lightsource[3].spotDirection[3],
 	};
 
-	
+	glUniform4fv(glGetUniformLocation(p, "LightSource[0].position"), 1, LightSource_0_pos);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[0].ambient"), 1, LightSource_0_amb);
+
+	glUniform4fv(glGetUniformLocation(p, "LightSource[1].position"), 1, LightSource_1_pos);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[1].ambient"), 1, LightSource_1_amb);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[1].diffuse"), 1, LightSource_1_diff);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[1].specular"), 1, LightSource_1_spec);
+	glUniform1f(glGetUniformLocation(p, "LightSource[1].constantAttenuation"), lightsource[1].constantAttenuation);
+	glUniform1f(glGetUniformLocation(p, "LightSource[1].linearAttenuation"), lightsource[1].linearAttenuation);
+	glUniform1f(glGetUniformLocation(p, "LightSource[1].quadraticAttenuation"), lightsource[1].quadraticAttenuation);
+
+	glUniform4fv(iLocPointPosition, 1, LightSource_2_pos);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[2].ambient"), 1, LightSource_2_amb);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[2].diffuse"), 1, LightSource_2_diff);
+	glUniform4fv(glGetUniformLocation(p, "LightSource[2].specular"), 1, LightSource_2_spec);
+	glUniform1f(glGetUniformLocation(p, "LightSource[2].constantAttenuation"), lightsource[2].constantAttenuation);
+	glUniform1f(glGetUniformLocation(p, "LightSource[2].linearAttenuation"), lightsource[2].linearAttenuation);
+	glUniform1f(glGetUniformLocation(p, "LightSource[2].quadraticAttenuation"), lightsource[2].quadraticAttenuation);
+
 	glUniform4fv(iLocSpotPosition, 1, LightSource_3_pos);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[3].ambient"), 1, LightSource_3_amb);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[3].diffuse"), 1, LightSource_3_diff);
@@ -719,9 +702,14 @@ void onDisplay(void)
 	// matrix parameters
 
 	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, MVP.getTranspose());
-	glUniformMatrix4fv(iLocNormalTransform, 1, GL_FALSE, models[cur_idx].N.getTranspose());
-	glUniformMatrix4fv(iLocViewTransform, 1, GL_FALSE, view_matrix.getTranspose());
-	glUniformMatrix4fv(iLocModelTransform, 1, GL_FALSE, M.getTranspose());
+	
+//	Matrix4 M_inv_trans = view_matrix*M;
+	//M_inv_trans.invert();
+	M.invertEuclidean();
+	glUniformMatrix4fv(iLocModelTransform_inv_trans, 1, GL_FALSE,M.get());
+	glUniformMatrix4fv(iLocModelTrans, 1, GL_FALSE, (R*models[cur_idx].N).getTranspose());
+
+
 
 
 	GLfloat main_camera_pos_vec[3] = {
@@ -880,7 +868,7 @@ void onMouse(int who, int state, int x, int y)
 		break;
 	case GLUT_WHEEL_UP:
 		if (spotOn == 1) {
-			lightsource[3].spotCosCutoff -= 0.003;
+			lightsource[3].spotCosCutoff -= 0.0005;
 			printf("Turn CUT_OFF_ANGLE up\n");
 		}
 		//printf("wheel up      "); 
@@ -888,7 +876,7 @@ void onMouse(int who, int state, int x, int y)
 	case GLUT_WHEEL_DOWN:
 		//printf("wheel down    "); 
 		if (spotOn == 1) {
-			lightsource[3].spotCosCutoff += 0.003;
+			lightsource[3].spotCosCutoff += 0.0005;
 			printf("Turn CUT_OFF_ANGLE down\n");
 		}
 
@@ -1171,9 +1159,9 @@ void initParameter()
 	lightsource[0].ambient[3] = 1;
 
 	// 1: directional light
-	lightsource[1].position[0] = 3;
-	lightsource[1].position[1] = 3;
-	lightsource[1].position[2] = 3;
+	lightsource[1].position[0] = -1;
+	lightsource[1].position[1] = 1;
+	lightsource[1].position[2] = 1;
 	lightsource[1].position[3] = 1;
 	lightsource[1].ambient[0] = 0.15;
 	lightsource[1].ambient[1] = 0.15;
@@ -1256,12 +1244,10 @@ int main(int argc, char **argv)
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 
 	// create window
-//	windowHeight = windowWidth = 800;
 	glutInitWindowPosition(500, 100);
-//	glutInitWindowSize(windowWidth, windowHeight);
 	glutInitWindowSize(800, 800);
 
-	glutCreateWindow("10420 CS550000 CG HW2 103011227");
+	glutCreateWindow(" CS550000 CG HW2 103011227");
 
 	glewInit();
 	if (glewIsSupported("GL_VERSION_2_0")) {
@@ -1275,7 +1261,6 @@ int main(int argc, char **argv)
 
 	// load obj models through glm
 	loadOBJModel();
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	// register glut callback functions
 	glutDisplayFunc(onDisplay);
@@ -1288,9 +1273,7 @@ int main(int argc, char **argv)
 	glutReshapeFunc(onWindowReshape);
 	glutTimerFunc(timeInterval, timerFunc, 0);
 
-	// set up lighting parameters
-	// setLightingSource(); 
-	// call in setShaders();
+	
 
 	// set up shaders here
 	setShaders();
