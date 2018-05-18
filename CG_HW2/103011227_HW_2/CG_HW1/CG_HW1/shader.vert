@@ -1,8 +1,3 @@
-attribute vec4 av4position;
-attribute vec3 av3normal;
-
-
-varying vec4 vv4color;
 
 struct LightSourceParameters {
 	vec4 ambient;
@@ -25,11 +20,8 @@ struct MaterialParameters {
 	vec4 specular;
 	float shininess;
 };
-
 uniform MaterialParameters Material;
 uniform LightSourceParameters LightSource[4];
-// 0:ambient light  1:directional light  2:point light  3:spot light
-
 uniform int ambientOn;
 uniform int diffuseOn;
 uniform int specularOn;
@@ -42,13 +34,19 @@ uniform mat4 ModelTrans_inv_transpos;
 uniform mat4 ModelTrans;
 uniform vec3 eyePos;
 
-vec3 vv3normal = mat3(ModelTrans_inv_transpos)*av3normal;
 
+attribute vec4 av4position;
+attribute vec3 av3normal;
 
-
+varying vec4 vv4color;
 varying vec4 vv4position;
 varying vec3 N;
 varying vec3 V;
+
+
+vec3 vv3normal = mat3(ModelTrans_inv_transpos)*av3normal;
+
+
 
 //I=IaKa+ sum fpip(kd*(N dot Lp)+ks(N dot Hp)^n)
 

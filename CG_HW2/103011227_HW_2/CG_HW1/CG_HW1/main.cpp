@@ -97,7 +97,7 @@ spotOn = 1, normal spot light
 spotOn = 2, directional spot light
 spotOn = 3, point spot light
 */
-int perPixelOn = 0; // 1: enable per pixel lighting
+int perPixelOn = 1; // 1: enable per pixel lighting
 
 //int autoRotateMode = 0;
 
@@ -1025,27 +1025,7 @@ void onKeyboard(unsigned char key, int x, int y)
 		isRotate = !isRotate;
 		printf("Turn %s auto rotate\n", isRotate ? "ON" : "OFF");
 		break;
-		/*
-	case 'C':
-	case 'c':
 
-
-				switch (spotOn) {
-		case 1:
-			spotOn = 2;
-			printf("change spot light into directional mode\n");
-			break;
-		case 2:
-			spotOn = 3;
-			printf("change spot light into point mode\n");
-			break;
-		case 3:
-			spotOn = 1;
-			printf("change spot light into normal spotlight mode\n");
-			break;
-		}
-		break;
-		*/
 
 	case 'f':
 	case 'F':
@@ -1135,8 +1115,6 @@ void onKeyboardSpecial(int key, int x, int y) {
 
 void onWindowReshape(int width, int height)
 {
-	//windowHeight = height;
-	//windowWidth = width;
 	printf("%18s(): %dx%d\n", __FUNCTION__, width, height);
 }
 

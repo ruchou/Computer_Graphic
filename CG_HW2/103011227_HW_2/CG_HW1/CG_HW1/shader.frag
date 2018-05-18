@@ -1,7 +1,3 @@
-varying vec4 vv4color;
-varying vec4 vv4position;
-varying vec3 N;
-varying vec3 V;
 
 
 struct LightSourceParameters {
@@ -28,17 +24,18 @@ struct MaterialParameters {
 
 uniform MaterialParameters Material;
 uniform LightSourceParameters LightSource[4];
-// 0:ambient light  1:directional light  2:point light  3:spot light
-
 uniform int ambientOn;
 uniform int diffuseOn;
 uniform int specularOn;
 uniform int directionalOn;
 uniform int pointOn;
 uniform int spotOn;
-
 uniform int perPixelOn;
 
+varying vec4 vv4color;
+varying vec4 vv4position;
+varying vec3 N;
+varying vec3 V;
 
 vec4 getDirectionalLight(LightSourceParameters lightSource){
 	vec4 color = vec4(0.0f,0.0f,0.0f,0.0f);
