@@ -91,12 +91,7 @@ camera main_camera;
 
 int ambientOn = 1, diffuseOn = 1, specularOn = 1;
 int directionalOn = 0, pointOn = 0, spotOn = 0;
-/*
-spotOn = 0, no spot light
-spotOn = 1, normal spot light
-spotOn = 2, directional spot light
-spotOn = 3, point spot light
-*/
+
 int perPixelOn = 1; // 1: enable per pixel lighting
 
 //int autoRotateMode = 0;
@@ -111,7 +106,6 @@ float rotateSpeed = 300.0; // it is the reciprocal of actual rotate speed
 bool crazy_speed = false;
 
 //windows
-//int windowHeight, windowWidth;
 
 #define numOfLightSources 4
 struct LightSourceParameters {
@@ -349,35 +343,13 @@ void traverseColorModel(model &m)
 	m.vertices = (GLfloat*)malloc(sizeof(GLfloat)*m.obj->numtriangles * 9);
 	m.normals = (GLfloat*)malloc(sizeof(GLfloat)*m.obj->numtriangles * 9);
 
-	/*
-
-	float max_x = m.obj->vertices[3];
-	float max_y = m.obj->vertices[4];
-	float max_z = m.obj->vertices[5];
-	float min_x = m.obj->vertices[3];
-	float min_y = m.obj->vertices[4];
-	float min_z = m.obj->vertices[5];
-	*/
 	GLMgroup* group = m.obj->groups;
 	int offsetIndex = 0;
-	// index from 0 - 9 * group->numtriangles-1 is group 1's vertices and normals, and so on
 	while (group) {
 		for (int i = 0; i < group->numtriangles; i++) {
 
 			
 			int triangleIdx = group->triangles[i];
-
-			/*
-			// the index of each vertex
-			int indv1 = m.obj->triangles[triangleID].vindices[0];
-			int indv2 = m.obj->triangles[triangleID].vindices[1];
-			int indv3 = m.obj->triangles[triangleID].vindices[2];
-
-			// the index of each normal
-			int indn1 = m.obj->triangles[triangleID].nindices[0];
-			int indn2 = m.obj->triangles[triangleID].nindices[1];
-			int indn3 = m.obj->triangles[triangleID].nindices[2];
-			*/
 
 
 			int indv[3] = {
@@ -414,10 +386,6 @@ void traverseColorModel(model &m)
 				m.normals[offsetIndex + i * 9 + 3 * k + 1] = m.obj->normals[indv[k] * 3 + 1];
 				m.normals[offsetIndex + i * 9 + 3 * k + 2] = m.obj->normals[indv[k] * 3 + 2];
 
-
-
-
-
 			}
 
 		
@@ -425,26 +393,10 @@ void traverseColorModel(model &m)
 		}
 		offsetIndex += 9 * group->numtriangles;
 		group = group->next;
-		// printf("offsetIndex = %d\n", offsetIndex);
 	}
 
 
 
-	/*
-	float normalize_scale = max(max(abs(max_x - min_x), abs(max_y - min_y)), abs(max_z - min_z));
-
-	Matrix4 S, T;
-	S.identity();
-	T.identity();
-	S[0] = 2 / normalize_scale;
-	S[5] = 2 / normalize_scale;;
-	S[10] = 2 / normalize_scale;
-	T[3] = -(min_x + max_x) / 2;
-	T[7] = -(min_y + max_y) / 2;
-	T[11] = -(min_z + max_z) / 2;
-
-	m.N = S*T;
-	*/
 
 	float norm_scale = max(max(abs(maxVal[0] - minVal[0]), abs(maxVal[1] - minVal[1])), abs(maxVal[2] - minVal[2]));
 	Matrix4 S, T;
@@ -482,20 +434,7 @@ void loadConfigFile()
 void loadOBJModel()
 {
 
-	/*
-	// read an obj model here
-	if (OBJ != NULL) {
-		free(OBJ);
-	}
-	OBJ = glmReadOBJ((char*)filenames[modelIndex].c_str());
-	printf("%s\n", filenames[modelIndex]);
 
-	glmFacetNormals(OBJ);
-	glmVertexNormals(OBJ, 90.0);
-
-	// traverse the color model
-	traverseColorModel();
-	*/
 
 	models = new model[filenames.size()];
 	int idx = 0;
@@ -685,8 +624,7 @@ void onDisplay(void)
 
 
 	Matrix4 M = R*models[cur_idx].N;
-	//Matrix4 V = getViewTransMatrix();
-	//Matrix4 P = getPerpectiveMatrix();
+
 
 	MVP = project_matrix * view_matrix*M;
 
@@ -707,8 +645,6 @@ void onDisplay(void)
 
 	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, MVP.getTranspose());
 	
-//	Matrix4 M_inv_trans = view_matrix*M;
-	//M_inv_trans.invert();
 	M.invertEuclidean();
 	glUniformMatrix4fv(iLocModelTransform_inv_trans, 1, GL_FALSE,M.get());
 	glUniformMatrix4fv(iLocModelTrans, 1, GL_FALSE, (R*models[cur_idx].N).getTranspose());
@@ -988,6 +924,7 @@ void onKeyboard(unsigned char key, int x, int y)
 		printf("Turn %s directional light\n", directionalOn ? "ON" : "OFF");
 		printStatus();
 		break;
+	case 'W':
 	case 'w':
 		//pointOn = (pointOn + 1) % 2;
 
@@ -1116,6 +1053,7 @@ void onKeyboardSpecial(int key, int x, int y) {
 void onWindowReshape(int width, int height)
 {
 	printf("%18s(): %dx%d\n", __FUNCTION__, width, height);
+	proj.aspect = width / height;
 }
 
 void initParameter()
@@ -1138,7 +1076,6 @@ void initParameter()
 
 	//Hw2
 
-	//float PLRange = 70.0; // todo
 						  // 0: Ambient
 	lightsource[0].position[0] = 0;
 	lightsource[0].position[1] = 0;
