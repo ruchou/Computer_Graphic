@@ -645,7 +645,7 @@ void onDisplay(void)
 
 	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, MVP.getTranspose());
 	
-	M.invertEuclidean();
+	M.invert();
 	glUniformMatrix4fv(iLocModelTransform_inv_trans, 1, GL_FALSE,M.get());
 	glUniformMatrix4fv(iLocModelTrans, 1, GL_FALSE, (R*models[cur_idx].N).getTranspose());
 
