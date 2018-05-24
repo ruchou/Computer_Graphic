@@ -582,14 +582,25 @@ void setShaders()
 
 void onMouse(int who, int state, int x, int y)
 {
-	printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
+	//printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
 
 	switch (who)
 	{
 		case GLUT_LEFT_BUTTON:
 			if (light_idx == 2)
 			{
-				lightInfo[2].spotExponent *= 0.8;
+				lightInfo[2].spotExponent *= 0.6;
+				std::cout << "spotExponent" << lightInfo[2].spotExponent << endl;
+				
+				if (lightInfo[2].spotExponent <= 0.5) {
+					std::cout << "Warning!!!! spotExponent is below 0.5 "<< endl;
+					std::cout << "Warning!!!! It is hard to observe the model, and thus it is set to be 0.5 " << endl;
+					lightInfo[2].spotExponent = 0.5;
+
+				}
+
+
+
 			}
 			current_x = x;
 			current_y = y;
@@ -600,11 +611,13 @@ void onMouse(int who, int state, int x, int y)
 			current_y = y;
 			if (light_idx == 2)
 			{
-				lightInfo[2].spotExponent *= 1.2;
+				lightInfo[2].spotExponent *= 1.5;
+				std::cout << "spotExponent" << lightInfo[2].spotExponent << endl;
+
 			}
 			break;
 		case GLUT_WHEEL_UP:
-			printf("wheel up      \n");
+		//	printf("wheel up      \n");
 			if (light_idx == 2)
 			{
 				lightInfo[2].spotCosCutoff -= 0.0005;
@@ -612,7 +625,7 @@ void onMouse(int who, int state, int x, int y)
 			}
 			break;
 		case GLUT_WHEEL_DOWN:
-			printf("wheel down    \n");
+		//	printf("wheel down    \n");
 			if (light_idx == 2)
 			{
 				lightInfo[2].spotCosCutoff += 0.0005;
@@ -662,8 +675,8 @@ void printStatus() {
 	cout << endl;
 
 	cout << setw(20) << "Ambient =  " << (enableAmbient == true);
-	cout << setw(20) << "Diffuse = " << (enableSpecular == true);
-	cout << setw(20) << "Specular = " << (enableDiffuse == true);
+	cout << setw(20) << "Specular = " << (enableSpecular == true);
+	cout << setw(20) << "Diffuse = " << (enableDiffuse == true);
 	cout << endl;
 
 }
@@ -671,7 +684,7 @@ void printStatus() {
 
 void onKeyboard(unsigned char key, int x, int y)
 {
-	printf("%18s(): (%d, %d) key: %c(0x%02X) ", __FUNCTION__, x, y, key, key);
+	//printf("%18s(): (%d, %d) key: %c(0x%02X) ", __FUNCTION__, x, y, key, key);
 	switch (key)
 	{
 	case GLUT_KEY_ESC: /* the Esc key */
@@ -700,15 +713,18 @@ void onKeyboard(unsigned char key, int x, int y)
 		break;
 	case 'a':
 		enableAmbient = !enableAmbient;
+		cout << "Ambient On" << endl;
 		printStatus();
 		break;
 	case 's':
-		enableSpecular = !enableSpecular;
+		enableDiffuse = !enableDiffuse;
+		cout << "Diffuse On" << endl;
 		printStatus();
 
 		break;
 	case 'd':
-		enableDiffuse = !enableDiffuse;
+		enableSpecular = !enableSpecular;
+		cout << "Specular  On" << endl;
 		printStatus();
 
 		break;
@@ -728,16 +744,34 @@ void onKeyboard(unsigned char key, int x, int y)
 }
 
 void onKeyboardSpecial(int key, int x, int y) {
-	printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
+	//printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
 	switch (key)
 	{
 	case GLUT_KEY_LEFT:
-		printf("key: LEFT ARROW");
+	//	printf("key: LEFT ARROW");
+		if (light_idx == 1) {
+			(lightInfo[1].position.x) -= 0.2;
+		}
+
 		break;
 
 	case GLUT_KEY_RIGHT:
-		printf("key: RIGHT ARROW");
+	//	printf("key: RIGHT ARROW");
+		if (light_idx == 1) {
+			(lightInfo[1].position.x) += 0.2;
+		}
 		break;
+	case GLUT_KEY_UP:
+		if (light_idx == 1) {
+			(lightInfo[1].position.y) += 0.2;
+		}
+		break;
+	case GLUT_KEY_DOWN:
+		if (light_idx == 1) {
+			(lightInfo[1].position.y) -= 0.2;
+		}
+		break;
+
 
 	default:
 		printf("key: 0x%02X      ", key);
@@ -774,18 +808,18 @@ void initParameter()
 	lightInfo[1].ambient = Vector4(0.15f, 0.15f, 0.15f, 1.0f);
 	lightInfo[1].diffuse = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	lightInfo[1].specular = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	lightInfo[1].constantAttenuation = 0.005;
-	lightInfo[1].linearAttenuation = 0.03;
-	lightInfo[1].quadraticAttenuation = 0.06f;
+	lightInfo[1].constantAttenuation = 0.03;
+	lightInfo[1].linearAttenuation = 0.3;
+	lightInfo[1].quadraticAttenuation = 0.6f;
 
 	lightInfo[2].position = Vector4(0.0f, 0.0f, 2.0f, 1.0f);
 	lightInfo[2].ambient = Vector4(0.15f, 0.15f, 0.15f, 1.0f);
 	lightInfo[2].diffuse = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	lightInfo[2].specular = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	lightInfo[2].spotDirection = Vector4(0.0f, 0.0f, -1.0f, 0.0f);
-	lightInfo[2].spotExponent = 5.0;
+	lightInfo[2].spotDirection = Vector4(0.0f, 0.0f, -2.0f, 0.0f);
+	lightInfo[2].spotExponent = 50;
 	lightInfo[2].spotCosCutoff = 0.99;
-	lightInfo[2].constantAttenuation = 0.5;
+	lightInfo[2].constantAttenuation = 0.05;
 	lightInfo[2].linearAttenuation = 0.3;
 	lightInfo[2].quadraticAttenuation = 0.6f;
 }
@@ -822,7 +856,7 @@ int main(int argc, char **argv)
 	// create window
 	glutInitWindowPosition(500, 100);
 	glutInitWindowSize(800, 800);
-	glutCreateWindow("CG HW1");
+	glutCreateWindow("CG HW2");
 
 	glewInit();
 	if (glewIsSupported("GL_VERSION_4_3")) {
