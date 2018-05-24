@@ -804,7 +804,7 @@ void initParameter()
 	lightInfo[0].diffuse = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	lightInfo[0].specular = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 
-	lightInfo[1].position = Vector4(0.0f, -2.0f, 1.0f, 1.0f);
+	lightInfo[1].position = Vector4(0.0f, -2.0f, 0.0f, 1.0f);
 	lightInfo[1].ambient = Vector4(0.15f, 0.15f, 0.15f, 1.0f);
 	lightInfo[1].diffuse = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	lightInfo[1].specular = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
