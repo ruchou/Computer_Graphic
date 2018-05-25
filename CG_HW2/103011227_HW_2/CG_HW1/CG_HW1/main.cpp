@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <iomanip>
 
 #include <GL/glew.h>
 #include <freeglut/glut.h>
@@ -13,6 +12,9 @@
 #include "glm.h"
 
 #include "Matrices.h"
+#include <iomanip>
+
+#define PI 3.1415926
 
 #pragma comment (lib, "glew32.lib")
 #pragma comment (lib, "freeglut.lib")
@@ -26,8 +28,6 @@
 # define GLUT_KEY_ESC 0x001B
 #endif
 
-
-
 #ifndef max
 # define max(a,b) (((a)>(b))?(a):(b))
 # define min(a,b) (((a)<(b))?(a):(b))
@@ -35,323 +35,202 @@
 
 using namespace std;
 
-
-
 // Shader attributes
-GLint iLocPosition;
-GLint iLocNormal;
-GLint iLocMVP;
+GLuint vaoHandle;
+GLuint vboHandles[2];
+GLuint positionBufferHandle;
+GLuint normalBufferHandle;
 
-GLint iLocMDiffuse, iLocMAmbient, iLocMSpecular, iLocMShininess;
-GLint iLocAmbientOn, iLocDiffuseOn, iLocSpecularOn;
-GLint iLocDirectionalOn, iLocPointOn, iLocSpotOn;
-GLint iLocModelTransform_inv_trans;
-GLint iLocEyePosition;
-GLint iLocPointPosition, iLocSpotPosition, iLocSpotExponent, iLocSpotCutoff, iLocSpotCosCutoff;
-GLint iLocPerPixelLighting;
-GLint iLocModelTrans;
+// Shader attributes for uniform variables
+GLuint iLocP;
+GLuint iLocV;
+GLuint iLocN;
+GLuint iLocR;
+GLuint iLocLightIdx;
+GLuint iLocKa;
+GLuint iLocKd;
+GLuint iLocKs;
+GLuint iLocShininess;
 
-//#define numOfModels 5
-
-float scaleOffset = 0.65f;
-
-
-struct camera
+struct iLocLightInfo
 {
-	Vector3 position;
-	Vector3 center;
-	Vector3 up_vector;
-};
+	GLuint position;
+	GLuint ambient;
+	GLuint diffuse;
+	GLuint specular;
+	GLuint spotDirection;
+	//GLuint spotCutoff;
+	GLuint spotExponent;
+	GLuint constantAttenuation;
+	GLuint linearAttenuation;
+	GLuint quadraticAttenuation;
+	GLuint spotCosCutoff; // (range: [1.0f,0.0f],-1.0f)
 
-struct model
+
+}iLocLightInfo[3];
+
+struct LightInfo
 {
-	GLMmodel *obj;
-	GLfloat *vertices;
-	GLfloat* normals;
-	Matrix4 N;
-
-	Vector3 position = Vector3(0, 0, 0);
-	Vector3 scale = Vector3(1, 1, 1);
-	Vector3 rotation = Vector3(0, 0, 0);	// Euler form
-};
-
-struct project_setting
-{
-	GLfloat nearClip, farClip;
-	GLfloat fovy;   //field of view
-	GLfloat aspect;
-	GLfloat left, right, top, bottom;
-};
-
-Matrix4 view_matrix;
-Matrix4 project_matrix;
-
-project_setting proj;
-camera main_camera;
-
-int ambientOn = 1, diffuseOn = 1, specularOn = 1;
-int directionalOn = 0, pointOn = 0, spotOn = 0;
-
-int perPixelOn = 1; // 1: enable per pixel lighting
-
-//int autoRotateMode = 0;
-
-//rotation
-bool isRotate = true;
-float rotateVal = 0.0f;
-int timeInterval = 33;
-Matrix4 R;
-float rotateSpeed = 300.0; // it is the reciprocal of actual rotate speed
-
-bool crazy_speed = false;
-
-//windows
-
-#define numOfLightSources 4
-struct LightSourceParameters {
+	Vector4 position;
+	Vector4 spotDirection;
 	Vector4 ambient;
 	Vector4 diffuse;
 	Vector4 specular;
-	Vector4 position;
-	Vector4 halfVector; //normalized vector between viewpoint and light vector
-	Vector3 spotDirection;
 	float spotExponent;
-	float spotCutoff; // (range: [0.0,90.0], 180.0)
-	float spotCosCutoff; // (range: [1.0,0.0],-1.0)
+	//float spotCutoff;
+	float spotCosCutoff;
 	float constantAttenuation;
 	float linearAttenuation;
 	float quadraticAttenuation;
-}typedef LightSource;
-LightSource lightsource[numOfLightSources];
+}lightInfo[3];
 
+struct Group
+{
+	int numTriangles;
+	GLfloat *vertices;
+	GLfloat *normals;
+	GLfloat ambient[4];
+	GLfloat diffuse[4];
+	GLfloat specular[4];
+	GLfloat shininess;
+};
 
-model* models;	// store the models we load
+struct Model
+{
+	int numGroups;
+	GLMmodel *obj;
+	Group *group;
+	Matrix4 N;
+	Vector3 position = Vector3(0,0,0);
+	Vector3 scale = Vector3(1,1,1);
+	Vector3 rotation = Vector3(0,0,0);	// Euler form
+};
+
+Matrix4 V = Matrix4(
+	1, 0, 0, 0,
+	0, 1, 0, 0,
+	0, 0, 1, 0,
+	0, 0, 0, 1);
+
+Matrix4 P = Matrix4(
+	1, 0, 0, 0,
+	0, 1, 0, 0,
+	0, 0, -1, 0,
+	0, 0, 0, 1);
+
+Matrix4 R;
+
+int current_x, current_y;
+
+Model* models;	// store the models we load
 vector<string> filenames; // .obj filename list
 int cur_idx = 0; // represent which model should be rendered now
+int color_mode = 0;
+bool use_wire_mode = false;
+float rotateVal = 0.0f;
+int timeInterval = 33;	// miliseconds
+bool isRotate = true;
+bool enableAmbient = true;
+bool enableDiffuse = true;
+bool enableSpecular = true;
+float scaleOffset = 0.65f;
 
+int light_idx = 0;
 
+struct Frustum {
+	float left, right, top, bottom, cnear, cfar;
+};
 
-// [TODO] given a translation vector then output a Matrix4 (Translation Matrix)
-Matrix4 translate(Vector3 vec)
+Matrix4 myViewingMatrix(Vector3 cameraPosition, Vector3 cameraViewDirection, Vector3 cameraUpVector)
 {
-	Matrix4 mat;
+	Vector3 X, Y, Z;
+	Z = (cameraPosition - cameraViewDirection).normalize();
+	Y = cameraUpVector.normalize();
+	X = Y.cross(Z).normalize();
+	cameraUpVector = Z.cross(X);
 
-	mat = Matrix4(
-		1, 0, 0, vec[0],
-		0, 1, 0, vec[1],
-		0, 0, 1, vec[2],
+	Matrix4 mat = Matrix4(
+		X.x, X.y, X.z, -X.dot(cameraPosition),
+		Y.x, Y.y, Y.z, -Y.dot(cameraPosition),
+		Z.x, Z.y, Z.z, -Z.dot(cameraPosition),
 		0, 0, 0, 1
 	);
-
 
 	return mat;
 }
 
-// [TODO] given a scaling vector then output a Matrix4 (Scaling Matrix)
-Matrix4 scaling(Vector3 vec)
+Matrix4 myOrthogonal(Frustum frustum)
 {
-	Matrix4 mat;
-
-	mat = Matrix4(
-		vec[0], 0, 0, 0,
-		0, vec[1], 0, 0,
-		0, 0, vec[2], 0,
+	GLfloat tx = -(frustum.right + frustum.left) / (frustum.right - frustum.left);
+	GLfloat ty = -(frustum.top + frustum.bottom) / (frustum.top - frustum.bottom);
+	GLfloat tz = -(frustum.cfar + frustum.cnear) / (frustum.cfar - frustum.cnear);
+	Matrix4 mat = Matrix4(
+		2 / (frustum.right - frustum.left), 0, 0, tx,
+		0, 2 / (frustum.top - frustum.bottom), 0, ty,
+		0, 0, -2 / (frustum.cfar - frustum.cnear), tz,
 		0, 0, 0, 1
 	);
-
 
 	return mat;
 }
 
-// [TODO] given a float value then ouput a rotation matrix alone axis-X (rotate alone axis-X)
-Matrix4 rotateX(GLfloat val)
+Matrix4 RotateY(float val)
 {
-	Matrix4 mat;
-
-	mat = Matrix4(
-		1, 0, 0, 0,
-		0, cos(val), -sin(val), 0,
-		0, sin(val), cos(val), 0,
-		0, 0, 0, 1
-	);
-
-
-	return mat;
-}
-
-// [TODO] given a float value then ouput a rotation matrix alone axis-Y (rotate alone axis-Y)
-Matrix4 rotateY(GLfloat val)
-{
-	Matrix4 mat;
-
-	mat = Matrix4(
-		cos(val), 0, sin(val), 0,
-		0, 1, 0, 0,
-		-sin(val), 0, cos(val), 0,
-		0, 0, 0, 1
-	);
-
-
-	return mat;
-}
-
-// [TODO] given a float value then ouput a rotation matrix alone axis-Z (rotate alone axis-Z)
-Matrix4 rotateZ(GLfloat val)
-{
-	Matrix4 mat;
-
-	mat = Matrix4(
-		cos(val), -sin(val), 0, 0,
-		sin(val), cos(val), 0, 0,
-		0, 0, 1, 0,
-		0, 0, 0, 1
-	);
-
-
-	return mat;
-}
-
-Matrix4 rotate(Vector3 vec)
-{
-	return rotateX(vec.x)*rotateY(vec.y)*rotateZ(vec.z);
-}
-
-// [TODO] compute viewing matrix accroding to the setting of main_camera
-void setViewingMatrix()
-{
-
-	//viewing matrix transform
-	Vector3 P1P2 = main_camera.center - main_camera.position;
-	Vector3 P1P3 = main_camera.up_vector;
-	Vector3 Rz = -(P1P2.normalize());
-	Vector3 Rx = P1P2.cross(P1P3).normalize();
-	Vector3 Ry = Rz.cross(Rx);
-
-	Matrix4 V_rotation = Matrix4(
-		Rx[0], Rx[1], Rx[2], 0,
-		Ry[0], Ry[1], Ry[2], 0,
-		Rz[0], Rz[1], Rz[2], 0,
-		0, 0, 0, 1
-	);
-	Matrix4 V_translate = Matrix4(
-		1, 0, 0, -main_camera.position[0],
-		0, 1, 0, -main_camera.position[1],
-		0, 0, 1, -main_camera.position[2],
-		0, 0, 0, 1
-	);
-
-	view_matrix = V_rotation*V_translate;
-
-
-
-}
-
-// [TODO] compute orthogonal projection matrix
-void setOrthogonal()
-{
-
-
-	project_matrix = Matrix4(
-		2.0 / (proj.right - proj.left), 0, 0, -(proj.right + proj.left) / (proj.right - proj.left),
-		0, 2.0 / (proj.top - proj.bottom), 0, -(proj.top + proj.bottom) / (proj.top - proj.bottom),
-		0, 0, 2.0 / (proj.nearClip - proj.farClip), -(proj.farClip + proj.nearClip) / (proj.farClip - proj.nearClip),
-		0, 0, 0, 1.0
-	);
-
-
-	//std::cout << project_matrix;
-
-}
-
-// [TODO] compute persepective projection matrix
-void setPerspective()
-{
-
-
-
-	project_matrix = Matrix4(
-		2.0*proj.nearClip / (proj.right - proj.left), 0, (proj.right + proj.left) / (proj.right - proj.left), 0,
-		0, 2.0* proj.nearClip / (proj.top - proj.bottom), (proj.top + proj.bottom) / (proj.top - proj.bottom), 0,
-		0, 0, (proj.farClip + proj.nearClip) / (proj.nearClip - proj.farClip), 2 * proj.farClip*proj.nearClip / (proj.nearClip - proj.farClip),
-		0, 0, -1, 0
-	);
-
-}
-
-Matrix4 myRotateMatrix(float ax, float ay, float az)
-{
-	float cosX = cosf(ax);
-	float sinX = sinf(ax);
-	float cosY = cosf(ay);
-	float sinY = sinf(ay);
-	float cosZ = cosf(az);
-	float sinZ = sinf(az);
+	val = PI*val / 180.0;
 
 	Matrix4 mat;
-	mat[0] = cosZ * cosY;
-	mat[1] = -sinZ * cosX + cosZ * sinY*sinX;
-	mat[2] = sinZ * sinX + cosZ * sinY*cosX;
+	mat[0] = cos(val);
+	mat[1] = 0;
+	mat[2] = sin(val);
 	mat[3] = 0;
-	mat[4] = sinZ * cosY;
-	mat[5] = cosZ * cosX + sinZ * sinY*sinX;
-	mat[6] = -cosZ * sinX + sinZ * sinY*cosX;
+
+	mat[4] = 0;
+	mat[5] = 1;
+	mat[6] = 0;
 	mat[7] = 0;
-	mat[8] = -sinY;
-	mat[9] = cosY * sinX;
+
+	mat[8] = -sin(val);
+	mat[9] = 0;
+	mat[10] = cos(val);
 	mat[11] = 0;
+
 	mat[12] = 0;
 	mat[13] = 0;
 	mat[14] = 0;
 	mat[15] = 1;
+
 	return mat;
 }
 
-void timerFunc(int timer_value)
+void traverseColorModel(Model &m)
 {
-	if (isRotate)
-		rotateVal += 0.1f;
-
-	if (crazy_speed)
-		rotateVal += 5.0f;
-
-//	float t = glutGet(GLUT_ELAPSED_TIME);
-//	float offsetTime = t / rotateSpeed;
-
-	if (isRotate) {
-		R = Matrix4(
-			cos(rotateVal), 0, sin(rotateVal), 0,
-			0, 1, 0, 0,
-			-sin(rotateVal), 0, cos(rotateVal), 0,
-			0, 0, 0, 1);
-
-	}
-
-
-	glutPostRedisplay();
-	glutTimerFunc(timeInterval, timerFunc, 0);
-}
-
-void traverseColorModel(model &m)
-{
-	int i;
-
-	GLfloat maxVal[3]={-100000,-10000,-100000};
-	GLfloat minVal[3] = {100000,100000,1000000};
-
-
-	// number of triangles
-	m.vertices = (GLfloat*)malloc(sizeof(GLfloat)*m.obj->numtriangles * 9);
-	m.normals = (GLfloat*)malloc(sizeof(GLfloat)*m.obj->numtriangles * 9);
-
+	m.numGroups = m.obj->numgroups;
+	m.group = new Group[m.numGroups];
 	GLMgroup* group = m.obj->groups;
-	int offsetIndex = 0;
-	while (group) {
-		for (int i = 0; i < group->numtriangles; i++) {
 
-			
+	GLfloat maxVal[3] = {-100000, -100000, -100000 };
+	GLfloat minVal[3] = { 100000, 100000, 100000 };
+
+	int curGroupIdx = 0;
+
+	// Iterate all the groups of this model
+	while (group)
+	{
+		m.group[curGroupIdx].vertices = new GLfloat[group->numtriangles * 9];
+		m.group[curGroupIdx].normals = new GLfloat[group->numtriangles * 9];
+		m.group[curGroupIdx].numTriangles = group->numtriangles;
+
+		// Fetch material information
+		memcpy(m.group[curGroupIdx].ambient, m.obj->materials[group->material].ambient, sizeof(GLfloat) * 4);
+		memcpy(m.group[curGroupIdx].diffuse, m.obj->materials[group->material].diffuse, sizeof(GLfloat) * 4);
+		memcpy(m.group[curGroupIdx].specular, m.obj->materials[group->material].specular, sizeof(GLfloat) * 4);
+
+		m.group[curGroupIdx].shininess = m.obj->materials[group->material].shininess;
+
+		// For each triangle in this group
+		for (int i = 0; i < group->numtriangles; i++)
+		{
 			int triangleIdx = group->triangles[i];
-
-
 			int indv[3] = {
 				m.obj->triangles[triangleIdx].vindices[0],
 				m.obj->triangles[triangleIdx].vindices[1],
@@ -363,87 +242,49 @@ void traverseColorModel(model &m)
 				m.obj->triangles[triangleIdx].nindices[2]
 			};
 
+			// For each vertex in this triangle
+			for (int j = 0; j < 3; j++)
+			{
+				m.group[curGroupIdx].vertices[i * 9 + j * 3 + 0] = m.obj->vertices[indv[j] * 3 + 0];
+				m.group[curGroupIdx].vertices[i * 9 + j * 3 + 1] = m.obj->vertices[indv[j] * 3 + 1];
+				m.group[curGroupIdx].vertices[i * 9 + j * 3 + 2] = m.obj->vertices[indv[j] * 3 + 2];
+				m.group[curGroupIdx].normals[i * 9 + j * 3 + 0] = m.obj->normals[indn[j] * 3 + 0];
+				m.group[curGroupIdx].normals[i * 9 + j * 3 + 1] = m.obj->normals[indn[j] * 3 + 1];
+				m.group[curGroupIdx].normals[i * 9 + j * 3 + 2] = m.obj->normals[indn[j] * 3 + 2];
 
+				maxVal[0] = max(maxVal[0], m.group[curGroupIdx].vertices[i * 9 + j * 3 + 0]);
+				maxVal[1] = max(maxVal[1], m.group[curGroupIdx].vertices[i * 9 + j * 3 + 1]);
+				maxVal[2] = max(maxVal[2], m.group[curGroupIdx].vertices[i * 9 + j * 3 + 2]);
 
-			// vertices
-
-
-			for (int k = 0; k < 3; k++) {
-				m.vertices[offsetIndex + i * 9 + 3*k] = m.obj->vertices[indv[k] * 3 + 0];
-				m.vertices[offsetIndex + i * 9 + 3*k+1] = m.obj->vertices[indv[k] * 3 + 1];
-				m.vertices[offsetIndex + i * 9 + 3*k+2] = m.obj->vertices[indv[k] * 3 + 2];
-			
-				minVal[0] = min(minVal[0], m.vertices[offsetIndex + i * 9 + 3*k]);
-				minVal[1]= min(minVal[1], m.vertices[offsetIndex + i * 9 + 3*k+1]);
-				minVal[2] = min(minVal[2], m.vertices[offsetIndex + i * 9 + 3 * k + 2]);
-
-				maxVal[0] = max(maxVal[0], m.vertices[offsetIndex + i * 9 + 3 * k]);
-				maxVal[1] = max(maxVal[1], m.vertices[offsetIndex + i * 9 + 3 * k + 1]);
-				maxVal[2] = max(maxVal[2], m.vertices[offsetIndex + i * 9 + 3 * k + 2]);
-
-				
-				m.normals[offsetIndex + i * 9 + 3 * k] = m.obj->normals[indv[k] * 3 + 0];
-				m.normals[offsetIndex + i * 9 + 3 * k + 1] = m.obj->normals[indv[k] * 3 + 1];
-				m.normals[offsetIndex + i * 9 + 3 * k + 2] = m.obj->normals[indv[k] * 3 + 2];
-
+				minVal[0] = min(minVal[0], m.group[curGroupIdx].vertices[i * 9 + j * 3 + 0]);
+				minVal[1] = min(minVal[1], m.group[curGroupIdx].vertices[i * 9 + j * 3 + 1]);
+				minVal[2] = min(minVal[2], m.group[curGroupIdx].vertices[i * 9 + j * 3 + 2]);
 			}
-
-		
-			
 		}
-		offsetIndex += 9 * group->numtriangles;
 		group = group->next;
+		curGroupIdx++;
 	}
 
-
-
-
+	// Normalize the model
 	float norm_scale = max(max(abs(maxVal[0] - minVal[0]), abs(maxVal[1] - minVal[1])), abs(maxVal[2] - minVal[2]));
 	Matrix4 S, T;
 
-	S[0] = 2 / norm_scale * scaleOffset;	S[5] = 2 / norm_scale * scaleOffset;	S[10] = 2 / norm_scale * scaleOffset;
+	S[0] = 2 / norm_scale*scaleOffset;	S[5] = 2 / norm_scale*scaleOffset;	S[10] = 2 / norm_scale*scaleOffset;
 	T[3] = -(maxVal[0] + minVal[0]) / 2;
 	T[7] = -(maxVal[1] + minVal[1]) / 2;
 	T[11] = -(maxVal[2] + minVal[2]) / 2;
-	m.N = S * T;
-
+	m.N = S*T;
 }
-
-void loadConfigFile()
-{
-	ifstream fin;
-	string line;
-	fin.open("../../config.txt", ios::in);
-	if (fin.is_open())
-	{
-		while (getline(fin, line))
-		{
-			filenames.push_back(line);
-		}
-		fin.close();
-	}
-	else
-	{
-		cout << "Unable to open the config file!" << endl;
-	}
-	for (int i = 0; i < filenames.size(); i++)
-		printf("%s\n", filenames[i].c_str());
-}
-
 
 void loadOBJModel()
 {
-
-
-
-	models = new model[filenames.size()];
+	models = new Model[filenames.size()];
 	int idx = 0;
 	for (string filename : filenames)
 	{
 		models[idx].obj = glmReadOBJ((char*)filename.c_str());
 		traverseColorModel(models[idx++]);
 	}
-
 }
 
 void onIdle()
@@ -451,254 +292,134 @@ void onIdle()
 	glutPostRedisplay();
 }
 
+void drawModel(Model &m)
+{
+	int groupNum = m.numGroups;
 
-void setUniformVariables(GLuint p) {
+	glBindVertexArray(vaoHandle);
+	glUniform1i(iLocLightIdx, light_idx);
 
-	iLocPosition = glGetAttribLocation(p, "av4position");
-	iLocNormal = glGetAttribLocation(p, "av3normal");
-	iLocMVP = glGetUniformLocation(p, "mvp");
+	for (int i = 0; i < groupNum; i++)
+	{
+		Matrix4 N = m.N;
 
-	iLocMDiffuse = glGetUniformLocation(p, "Material.diffuse");
-	iLocMAmbient = glGetUniformLocation(p, "Material.ambient");
-	iLocMSpecular = glGetUniformLocation(p, "Material.specular");
-	iLocMShininess = glGetUniformLocation(p, "Material.shininess");
+		glBindBuffer(GL_ARRAY_BUFFER, positionBufferHandle);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float)*m.group[i].numTriangles*9, m.group[i].vertices, GL_DYNAMIC_DRAW);
 
-	iLocAmbientOn = glGetUniformLocation(p, "ambientOn");
-	iLocDiffuseOn = glGetUniformLocation(p, "diffuseOn");
-	iLocSpecularOn = glGetUniformLocation(p, "specularOn");
-	iLocDirectionalOn = glGetUniformLocation(p, "directionalOn");
-	iLocPointOn = glGetUniformLocation(p, "pointOn");
-	iLocSpotOn = glGetUniformLocation(p, "spotOn");
-	iLocModelTransform_inv_trans = glGetUniformLocation(p, "ModelTrans_inv_transpos");
-	iLocModelTrans = glGetUniformLocation(p, "ModelTrans");
-	iLocEyePosition = glGetUniformLocation(p, "eyePos");
-	iLocPerPixelLighting = glGetUniformLocation(p, "perPixelOn");
+		glBindBuffer(GL_ARRAY_BUFFER, normalBufferHandle);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float)*m.group[i].numTriangles * 9, m.group[i].normals, GL_DYNAMIC_DRAW);
 
-	iLocPointPosition = glGetUniformLocation(p, "LightSource[2].position");
-	iLocSpotPosition = glGetUniformLocation(p, "LightSource[3].position");
-	iLocSpotExponent = glGetUniformLocation(p, "LightSource[3].spotExponent");
-	iLocSpotCutoff = glGetUniformLocation(p, "LightSource[3].spotCutoff");
-	iLocSpotCosCutoff = glGetUniformLocation(p, "LightSource[3].spotCosCutoff");
+		glUniform4fv(iLocKa, 1, m.group[i].ambient);
+		glUniform4fv(iLocKd, 1, m.group[i].diffuse);
+		glUniform4fv(iLocKs, 1, m.group[i].specular);
+		glUniform1f(iLocShininess, m.group[i].shininess);
 
+		glUniformMatrix4fv(iLocP, 1, GL_FALSE, P.getTranspose());
+		glUniformMatrix4fv(iLocV, 1, GL_FALSE, V.getTranspose());
+		glUniformMatrix4fv(iLocN, 1, GL_FALSE, N.getTranspose());
+		glUniformMatrix4fv(iLocR, 1, GL_FALSE, R.getTranspose());
 
-	float LightSource_0_pos[] = {
-		lightsource[0].position[0],
-		lightsource[0].position[1],
-		lightsource[0].position[2],
-		lightsource[0].position[3],
-	};
-	float LightSource_0_amb[] = {
-		lightsource[0].ambient[0],
-		lightsource[0].ambient[1],
-		lightsource[0].ambient[2],
-		lightsource[0].ambient[3],
+		glDrawArrays(GL_TRIANGLES, 0, m.group[i].numTriangles * 3);
+	}
+}
+
+void drawTriangle()
+{
+	glBindVertexArray(vaoHandle);
+
+	float fakeColor[] = {
+		0.5f, 0.8f, 0.3f, 1.0f
 	};
 
+	Matrix4 MVP = P*V;
+	glUniformMatrix4fv(iLocN, 1, GL_FALSE, MVP.getTranspose());
+	glUniform4fv(iLocLightInfo[0].position, 1, fakeColor);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+}
 
-	float LightSource_1_pos[] = {
-		lightsource[1].position[0],
-		lightsource[1].position[1],
-		lightsource[1].position[2],
-		lightsource[1].position[3],
-	};
-	float LightSource_1_amb[] = {
-		lightsource[1].ambient[0],
-		lightsource[1].ambient[1],
-		lightsource[1].ambient[2],
-		lightsource[1].ambient[3],
-	};
-	float LightSource_1_diff[] = {
-		lightsource[1].diffuse[0],
-		lightsource[1].diffuse[1],
-		lightsource[1].diffuse[2],
-		lightsource[1].diffuse[3],
-	};
-	float LightSource_1_spec[] = {
-		lightsource[1].specular[0],
-		lightsource[1].specular[1],
-		lightsource[1].specular[2],
-		lightsource[1].specular[3],
-	};
+void timerFunc(int timer_value)
+{
+	if (isRotate)
+	{
+		rotateVal += 1.0f;
+	}
 
-	float LightSource_2_pos[] = {
-		lightsource[2].position[0],
-		lightsource[2].position[1],
-		lightsource[2].position[2],
-		lightsource[2].position[3],
-	};
-	float LightSource_2_amb[] = {
-		lightsource[2].ambient[0],
-		lightsource[2].ambient[1],
-		lightsource[2].ambient[2],
-		lightsource[2].ambient[3],
-	};
-	float LightSource_2_diff[] = {
-		lightsource[2].diffuse[0],
-		lightsource[2].diffuse[1],
-		lightsource[2].diffuse[2],
-		lightsource[2].diffuse[3],
-	};
-	float LightSource_2_spec[] = {
-		lightsource[2].specular[0],
-		lightsource[2].specular[1],
-		lightsource[2].specular[2],
-		lightsource[2].specular[3],
-	};
+	R = RotateY(rotateVal);
 
-	float LightSource_3_pos[] = {
-		lightsource[3].position[0],
-		lightsource[3].position[1],
-		lightsource[3].position[2],
-		lightsource[3].position[3],
-	};
-	float LightSource_3_amb[] = {
-		lightsource[3].ambient[0],
-		lightsource[3].ambient[1],
-		lightsource[3].ambient[2],
-		lightsource[3].ambient[3],
-	};
-	float LightSource_3_diff[] = {
-		lightsource[3].diffuse[0],
-		lightsource[3].diffuse[1],
-		lightsource[3].diffuse[2],
-		lightsource[3].diffuse[3],
-	};
-	float LightSource_3_spec[] = {
-		lightsource[3].specular[0],
-		lightsource[3].specular[1],
-		lightsource[3].specular[2],
-		lightsource[3].specular[3],
-	};
-	float LightSource_3_spotDir[] = {
-		lightsource[3].spotDirection[0],
-		lightsource[3].spotDirection[1],
-		lightsource[3].spotDirection[2],
-		lightsource[3].spotDirection[3],
-	};
+	glutPostRedisplay();
+	glutTimerFunc(timeInterval, timerFunc, 0);
+}
 
-	glUniform4fv(glGetUniformLocation(p, "LightSource[0].position"), 1, LightSource_0_pos);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[0].ambient"), 1, LightSource_0_amb);
+void updateLight()
+{
+	if (enableAmbient)
+	{
+		glUniform4f(iLocLightInfo[0].ambient, lightInfo[0].ambient.x, lightInfo[0].ambient.y, lightInfo[0].ambient.z, lightInfo[0].ambient.w);
+		glUniform4f(iLocLightInfo[1].ambient, lightInfo[1].ambient.x, lightInfo[1].ambient.y, lightInfo[1].ambient.z, lightInfo[1].ambient.w);
+		glUniform4f(iLocLightInfo[2].ambient, lightInfo[2].ambient.x, lightInfo[2].ambient.y, lightInfo[2].ambient.z, lightInfo[2].ambient.w);
+	}
+	else
+	{
+		float zeros[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		glUniform4fv(iLocLightInfo[0].ambient, 1, zeros);
+		glUniform4fv(iLocLightInfo[1].ambient, 1, zeros);
+		glUniform4fv(iLocLightInfo[2].ambient, 1, zeros);
+	}
 
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].position"), 1, LightSource_1_pos);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].ambient"), 1, LightSource_1_amb);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].diffuse"), 1, LightSource_1_diff);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[1].specular"), 1, LightSource_1_spec);
-	glUniform1f(glGetUniformLocation(p, "LightSource[1].constantAttenuation"), lightsource[1].constantAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[1].linearAttenuation"), lightsource[1].linearAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[1].quadraticAttenuation"), lightsource[1].quadraticAttenuation);
+	if (enableDiffuse)
+	{
+		glUniform4f(iLocLightInfo[0].diffuse, lightInfo[0].diffuse.x, lightInfo[0].diffuse.y, lightInfo[0].diffuse.z, lightInfo[0].diffuse.w);
+		glUniform4f(iLocLightInfo[1].diffuse, lightInfo[1].diffuse.x, lightInfo[1].diffuse.y, lightInfo[1].diffuse.z, lightInfo[1].diffuse.w);
+		glUniform4f(iLocLightInfo[2].diffuse, lightInfo[2].diffuse.x, lightInfo[2].diffuse.y, lightInfo[2].diffuse.z, lightInfo[2].diffuse.w);
+	}
+	else
+	{
+		float zeros[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		glUniform4fv(iLocLightInfo[0].diffuse, 1, zeros);
+		glUniform4fv(iLocLightInfo[1].diffuse, 1, zeros);
+		glUniform4fv(iLocLightInfo[2].diffuse, 1, zeros);
+	}
 
-	glUniform4fv(iLocPointPosition, 1, LightSource_2_pos);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].ambient"), 1, LightSource_2_amb);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].diffuse"), 1, LightSource_2_diff);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].specular"), 1, LightSource_2_spec);
-	glUniform1f(glGetUniformLocation(p, "LightSource[2].constantAttenuation"), lightsource[2].constantAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[2].linearAttenuation"), lightsource[2].linearAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[2].quadraticAttenuation"), lightsource[2].quadraticAttenuation);
+	if (enableSpecular)
+	{
+		glUniform4f(iLocLightInfo[0].specular, lightInfo[0].specular.x, lightInfo[0].specular.y, lightInfo[0].specular.z, lightInfo[0].specular.w);
+		glUniform4f(iLocLightInfo[1].specular, lightInfo[1].specular.x, lightInfo[1].specular.y, lightInfo[1].specular.z, lightInfo[1].specular.w);
+		glUniform4f(iLocLightInfo[2].specular, lightInfo[2].specular.x, lightInfo[2].specular.y, lightInfo[2].specular.z, lightInfo[2].specular.w);
+	}
+	else
+	{
+		float zeros[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		glUniform4fv(iLocLightInfo[0].specular, 1, zeros);
+		glUniform4fv(iLocLightInfo[1].specular, 1, zeros);
+		glUniform4fv(iLocLightInfo[2].specular, 1, zeros);
+	}
 
-	glUniform4fv(iLocSpotPosition, 1, LightSource_3_pos);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[3].ambient"), 1, LightSource_3_amb);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[3].diffuse"), 1, LightSource_3_diff);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[3].specular"), 1, LightSource_3_spec);
-	glUniform3fv(glGetUniformLocation(p, "LightSource[3].spotDirection"), 1, LightSource_3_spotDir);
-	glUniform1f(glGetUniformLocation(p, "LightSource[3].constantAttenuation"), lightsource[2].constantAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[3].linearAttenuation"), lightsource[2].linearAttenuation);
-	glUniform1f(glGetUniformLocation(p, "LightSource[3].quadraticAttenuation"), lightsource[2].quadraticAttenuation);
-	glUniform1f(iLocSpotExponent, lightsource[3].spotExponent);
-	glUniform1f(iLocSpotCutoff, lightsource[3].spotCutoff);
-	glUniform1f(iLocSpotCosCutoff, lightsource[3].spotCosCutoff);
+
+	glUniform4f(iLocLightInfo[0].position, lightInfo[0].position.x, lightInfo[0].position.y, lightInfo[0].position.z, lightInfo[0].position.w);
+
+	glUniform4f(iLocLightInfo[1].position, lightInfo[1].position.x, lightInfo[1].position.y, lightInfo[1].position.z, lightInfo[1].position.w);
+	glUniform1f(iLocLightInfo[1].constantAttenuation, lightInfo[1].constantAttenuation);
+	glUniform1f(iLocLightInfo[1].linearAttenuation, lightInfo[1].linearAttenuation);
+	glUniform1f(iLocLightInfo[1].quadraticAttenuation, lightInfo[1].quadraticAttenuation);
+
+	glUniform4f(iLocLightInfo[2].position, lightInfo[2].position.x, lightInfo[2].position.y, lightInfo[2].position.z, lightInfo[2].position.w);
+	glUniform4f(iLocLightInfo[2].spotDirection, lightInfo[2].spotDirection.x, lightInfo[2].spotDirection.y, lightInfo[2].spotDirection.z, lightInfo[2].spotDirection.w);
+	glUniform1f(iLocLightInfo[2].spotExponent, lightInfo[2].spotExponent);
+	glUniform1f(iLocLightInfo[2].spotCosCutoff, lightInfo[2].spotCosCutoff);
+	glUniform1f(iLocLightInfo[2].constantAttenuation, lightInfo[2].constantAttenuation);
+	glUniform1f(iLocLightInfo[2].linearAttenuation, lightInfo[2].linearAttenuation);
+	glUniform1f(iLocLightInfo[2].quadraticAttenuation, lightInfo[2].quadraticAttenuation);
 }
 
 void onDisplay(void)
 {
 	// clear canvas
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);	// clear canvas to color(0,0,0)->black
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glEnableVertexAttribArray(iLocPosition); // av4position
-	glEnableVertexAttribArray(iLocNormal); // av3normal
+	updateLight();
 
-										   //MVP
-	Matrix4 T;
-	Matrix4 S;
-	Matrix4 MVP;
-
-
-	Matrix4 M = R*models[cur_idx].N;
-
-
-	MVP = project_matrix * view_matrix*M;
-
-
-
-
-	// pass lightsource and effect on/off info to shader
-	glUniform1i(iLocAmbientOn, ambientOn);
-	glUniform1i(iLocDiffuseOn, diffuseOn);
-	glUniform1i(iLocSpecularOn, specularOn);
-	glUniform1i(iLocDirectionalOn, directionalOn);
-	glUniform1i(iLocPointOn, pointOn);
-	glUniform1i(iLocSpotOn, spotOn);
-
-	glUniform1i(iLocPerPixelLighting, perPixelOn);
-
-	// matrix parameters
-
-	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, MVP.getTranspose());
-	
-	M.invert();
-	glUniformMatrix4fv(iLocModelTransform_inv_trans, 1, GL_FALSE,M.get());
-	glUniformMatrix4fv(iLocModelTrans, 1, GL_FALSE, (R*models[cur_idx].N).getTranspose());
-
-
-
-
-	GLfloat main_camera_pos_vec[3] = {
-		main_camera.position.x,
-		main_camera.position.y,
-		main_camera.position.z
-	};
-	glUniform3fv(iLocEyePosition, 1, main_camera_pos_vec);
-
-
-
-	// light source parameters which may change
-
-	float PointPos[] = {
-		lightsource[2].position[0],
-		lightsource[2].position[1],
-		lightsource[2].position[2],
-		lightsource[2].position[3],
-	};
-	float SpotPos[] = {
-		lightsource[3].position[0],
-		lightsource[3].position[1],
-		lightsource[3].position[2],
-		lightsource[3].position[3],
-	};
-
-
-	
-	glUniform4fv(iLocPointPosition, 1,PointPos );
-	glUniform4fv(iLocSpotPosition, 1, SpotPos);
-	glUniform1f(iLocSpotExponent, lightsource[3].spotExponent);
-	glUniform1f(iLocSpotCutoff, lightsource[3].spotCutoff);
-	glUniform1f(iLocSpotCosCutoff, lightsource[3].spotCosCutoff);
-
-	//pass model material vertices and normals value to the shader
-	GLMgroup* group = models[cur_idx].obj->groups;
-	int offsetIndex = 0;
-	while (group) {
-		glUniform4fv(iLocMAmbient, 1, models[cur_idx].obj->materials[group->material].ambient); // Material.ambient
-		glUniform4fv(iLocMDiffuse, 1, models[cur_idx].obj->materials[group->material].diffuse); // Material.diffuse
-		glUniform4fv(iLocMSpecular, 1, models[cur_idx].obj->materials[group->material].specular); // Material.specular
-		glUniform1f(iLocMShininess, models[cur_idx].obj->materials[group->material].shininess); // Material.shininess
-																				//printf("shininess = %f\n", OBJ->materials[group->material].shininess);
-		glVertexAttribPointer(iLocPosition, 3, GL_FLOAT, GL_FALSE, 0, models[cur_idx].vertices + offsetIndex);
-		glVertexAttribPointer(iLocNormal, 3, GL_FLOAT, GL_FALSE, 0, models[cur_idx].normals + offsetIndex);
-		glDrawArrays(GL_TRIANGLES, 0, 3 * (group->numtriangles));
-		offsetIndex += 9 * group->numtriangles;
-		group = group->next;
-	}
+	drawModel(models[cur_idx]);
 
 	glutSwapBuffers();
 }
@@ -719,6 +440,99 @@ void showShaderCompileStatus(GLuint shader, GLint *shaderCompiled)
 		glDeleteShader(shader);
 		free(errorLog);
 	}
+}
+
+void setVertexArrayObject()
+{
+	// Create and setup the vertex array object
+	glGenVertexArrays(1, &vaoHandle);
+	glBindVertexArray(vaoHandle);
+
+	// Enable the vertex attribute arrays
+	glEnableVertexAttribArray(0);	// Vertex position
+	glEnableVertexAttribArray(1);	// Vertex color
+
+	// Map index 0 to the position buffer
+	glBindBuffer(GL_ARRAY_BUFFER, positionBufferHandle);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
+	// Map index 1 to the color buffer
+	glBindBuffer(GL_ARRAY_BUFFER, normalBufferHandle);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+}
+
+void setVertexBufferObjects()
+{
+	// Triangles Data
+	float positionData[] = {
+		-0.8f, -0.8f, 0.0f,
+		0.8f, -0.8f, 0.0f,
+		0.0f, 0.8f, 0.0f };
+
+	float colorData[] = {
+		1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f };
+
+	glGenBuffers(2, vboHandles);
+
+	positionBufferHandle = vboHandles[0];
+	normalBufferHandle = vboHandles[1];
+
+	// Populate the position buffer
+	glBindBuffer(GL_ARRAY_BUFFER, positionBufferHandle);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 9, positionData, GL_STATIC_DRAW);
+
+	// Populate the color buffer
+	glBindBuffer(GL_ARRAY_BUFFER, normalBufferHandle);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 9, colorData, GL_STATIC_DRAW);
+}
+
+void setUniformVariables(GLuint p)
+{
+	iLocP = glGetUniformLocation(p, "um4p");
+	iLocV = glGetUniformLocation(p, "um4v");
+	iLocN = glGetUniformLocation(p, "um4n");
+	iLocR = glGetUniformLocation(p, "um4r");
+	iLocLightIdx = glGetUniformLocation(p, "lightIdx");
+	iLocKa = glGetUniformLocation(p, "material.Ka");
+	iLocKd = glGetUniformLocation(p, "material.Kd");
+	iLocKs = glGetUniformLocation(p, "material.Ks");
+	iLocShininess = glGetUniformLocation(p, "material.shininess");
+
+	iLocLightInfo[0].position = glGetUniformLocation(p, "light[0].position");
+	iLocLightInfo[0].ambient = glGetUniformLocation(p, "light[0].La");
+	iLocLightInfo[0].diffuse = glGetUniformLocation(p, "light[0].Ld");
+	iLocLightInfo[0].specular = glGetUniformLocation(p, "light[0].Ls");
+	iLocLightInfo[0].spotDirection = glGetUniformLocation(p, "light[0].spotDirection");
+	iLocLightInfo[0].spotCosCutoff = glGetUniformLocation(p, "light[0].spotCosCutoff");
+	iLocLightInfo[0].spotExponent = glGetUniformLocation(p, "light[0].spotExponent");
+	iLocLightInfo[0].constantAttenuation = glGetUniformLocation(p, "light[0].constantAttenuation");
+	iLocLightInfo[0].linearAttenuation = glGetUniformLocation(p, "light[0].linearAttenuation");
+	iLocLightInfo[0].quadraticAttenuation = glGetUniformLocation(p, "light[0].quadraticAttenuation");
+	
+
+	iLocLightInfo[1].position = glGetUniformLocation(p, "light[1].position");
+	iLocLightInfo[1].ambient = glGetUniformLocation(p, "light[1].La");
+	iLocLightInfo[1].diffuse = glGetUniformLocation(p, "light[1].Ld");
+	iLocLightInfo[1].specular = glGetUniformLocation(p, "light[1].Ls");
+	iLocLightInfo[1].spotDirection = glGetUniformLocation(p, "light[1].spotDirection");
+	iLocLightInfo[1].spotCosCutoff = glGetUniformLocation(p, "light[1].spotCosCutoff");
+	iLocLightInfo[1].spotExponent = glGetUniformLocation(p, "light[1].spotExponent");
+	iLocLightInfo[1].constantAttenuation = glGetUniformLocation(p, "light[1].constantAttenuation");
+	iLocLightInfo[1].linearAttenuation = glGetUniformLocation(p, "light[1].linearAttenuation");
+	iLocLightInfo[1].quadraticAttenuation = glGetUniformLocation(p, "light[1].quadraticAttenuation");
+
+	iLocLightInfo[2].position = glGetUniformLocation(p, "light[2].position");
+	iLocLightInfo[2].ambient = glGetUniformLocation(p, "light[2].La");
+	iLocLightInfo[2].diffuse = glGetUniformLocation(p, "light[2].Ld");
+	iLocLightInfo[2].specular = glGetUniformLocation(p, "light[2].Ls");
+	iLocLightInfo[2].spotDirection = glGetUniformLocation(p, "light[2].spotDirection");
+	iLocLightInfo[2].spotCosCutoff = glGetUniformLocation(p, "light[2].spotCosCutoff");
+	iLocLightInfo[2].spotExponent = glGetUniformLocation(p, "light[2].spotExponent");
+	iLocLightInfo[2].constantAttenuation = glGetUniformLocation(p, "light[2].constantAttenuation");
+	iLocLightInfo[2].linearAttenuation = glGetUniformLocation(p, "light[2].linearAttenuation");
+	iLocLightInfo[2].quadraticAttenuation = glGetUniformLocation(p, "light[2].quadraticAttenuation");
 }
 
 void setShaders()
@@ -759,125 +573,119 @@ void setShaders()
 
 	// link program
 	glLinkProgram(p);
-
 	glUseProgram(p);
 
-	// pass lightsource parameters to shader
-	//setLightingSource();
-
 	setUniformVariables(p);
-	
-
-
-}
-
-
-void printStatus() {
-	// print current status of lighting
-	cout << setw(20) << "Directional light = " << (directionalOn == 1) ;
-	cout << setw(20) << "Point light = " << (pointOn == 1);
-	cout << setw(20) << "Spot light = " << (spotOn == 1) ;
-	cout << endl;
-
-	cout << setw(20) << "Ambient =  " << (ambientOn == 1);
-	cout << setw(20) << "Diffuse = " << (diffuseOn == 1) ;
-	cout << setw(20) << "Specular = " << (specularOn == 1) ;
-	cout << endl;
-
+	setVertexBufferObjects();
+	setVertexArrayObject();
 }
 
 void onMouse(int who, int state, int x, int y)
 {
-	//printf("%18s(): (%d, %d) \n", __FUNCTION__, x, y);
+	//printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
 
 	switch (who)
 	{
-	case GLUT_LEFT_BUTTON: {
-		//printf("left button   "); 
-		if (spotOn == 1) {
-			lightsource[3].spotExponent += 0.1;
-			printf("Turn spotExponent up\n");
-		}
-		break;
-	}
-	case GLUT_MIDDLE_BUTTON:
-		//printf("middle button "); 
-		break;
-	case GLUT_RIGHT_BUTTON:
-		//printf("right button  "); 
-		if (spotOn == 1) {
-			lightsource[3].spotExponent -= 0.1;
-			printf("Turn spotExponent down\n");
-		}
+		case GLUT_LEFT_BUTTON:
+			if (light_idx == 2)
+			{
+				lightInfo[2].spotExponent *= 0.8;
+				std::cout << "spotExponent" << lightInfo[2].spotExponent << endl;
+				
 
-		break;
-	case GLUT_WHEEL_UP:
-		if (spotOn == 1) {
-			lightsource[3].spotCosCutoff -= 0.0005;
-			printf("Turn CUT_OFF_ANGLE up\n");
-		}
-		//printf("wheel up      "); 
-		break;
-	case GLUT_WHEEL_DOWN:
-		//printf("wheel down    "); 
-		if (spotOn == 1) {
-			lightsource[3].spotCosCutoff += 0.0005;
-			printf("Turn CUT_OFF_ANGLE down\n");
-		}
+				/*
+								if (lightInfo[2].spotExponent <= 0.1) {
+					std::cout << "Warning!!!! spotExponent is below 0.1 "<< endl;
+					std::cout << "Warning!!!! It is hard to observe the model, and thus it is set to be 0.1 " << endl;
+					lightInfo[2].spotExponent = 0.1;
 
-		break;
-	default:
-		//printf("0x%02X          ", who); 
-		break;
+				}
+
+				
+				*/
+
+
+
+			}
+			current_x = x;
+			current_y = y;
+			break;
+		case GLUT_MIDDLE_BUTTON: printf("middle button "); break;
+		case GLUT_RIGHT_BUTTON:
+			current_x = x;
+			current_y = y;
+			if (light_idx == 2)
+			{
+				lightInfo[2].spotExponent *= 1.5;
+				std::cout << "spotExponent" << lightInfo[2].spotExponent << endl;
+
+			}
+			break;
+		case GLUT_WHEEL_UP:
+		//	printf("wheel up      \n");
+			if (light_idx == 2)
+			{
+				lightInfo[2].spotCosCutoff -= 0.0005;
+				std::cout << "spotcutoff" << lightInfo[2].spotCosCutoff << endl;
+			}
+			break;
+		case GLUT_WHEEL_DOWN:
+		//	printf("wheel down    \n");
+			if (light_idx == 2)
+			{
+				lightInfo[2].spotCosCutoff += 0.0005;
+				std::cout << "spotcutoff" << lightInfo[2].spotCosCutoff << endl;
+
+			}
+			break;
+		default:                 
+			printf("0x%02X          ", who); break;
 	}
 
 	switch (state)
 	{
-	case GLUT_DOWN:
-		//printf("start "); 
-		break;
-	case GLUT_UP:
-		//printf("end   "); 
-		break;
+		case GLUT_DOWN: printf("start "); break;
+		case GLUT_UP:   printf("end   "); break;
 	}
 
-	//printf("\n");
+	printf("\n");
 }
 
 void onMouseMotion(int x, int y)
 {
-	//printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
-	
-	/*
-		float x_pos, y_pos;
-	if (spotOn != 0) {
+	//lightInfo[0].position.x = lightInfo[1].position.x = (x - 400) / 50.0f;
+	//lightInfo[0].position.y = lightInfo[1].position.y  = -(y - 400) / 50.0f;
 
-		x_pos= (float)x*(1.0 / 400.0)-1.0;
-		y_pos=-(float)y*(1.0 / 400.0)+1.0;
-		lightsource[3].position[0] = x_pos;
-		lightsource[3].position[1] = y_pos;
+	//lightInfo[2].position.x = (x - 400) / 400.0f;
+	//lightInfo[2].position.y = -(y - 400) / 400.0f;
 
-	}
-	
-	*/
-
-
-
+	printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
 }
-
 
 void onPassiveMouseMotion(int x, int y) {
-	float x_pos, y_pos;
-	if (spotOn != 0) {
 
-		x_pos = (float)x*(1.0 / 400.0) - 1.0;
-		y_pos = -(float)y*(1.0 / 400.0) + 1.0;
-		lightsource[3].position[0] = x_pos;
-		lightsource[3].position[1] = y_pos;
+	lightInfo[0].position.x = lightInfo[1].position.x = (x - 400) / 50.0f;
+	lightInfo[0].position.y = lightInfo[1].position.y = -(y - 400) / 50.0f;
 
-	}
+	lightInfo[2].position.x = (x - 400) / 400.0f;
+	lightInfo[2].position.y = -(y - 400) / 400.0f;
 }
 
+void printStatus() {
+	// print current status of lighting
+	cout << endl;
+	cout << setw(20) << "Directional light = " << (light_idx == 0);
+	cout << setw(20) << "Point light = " << (light_idx == 1);
+	cout << setw(20) << "Spot light = " << (light_idx == 2);
+	cout << endl;
+
+	cout << setw(20) << "Ambient =  " << (enableAmbient == true);
+	cout << setw(20) << "Diffuse = " << (enableDiffuse == true);
+	cout << setw(20) << "Specular = " << (enableSpecular == true);
+
+	cout << endl;
+
+}
 
 
 void onKeyboard(unsigned char key, int x, int y)
@@ -889,283 +697,163 @@ void onKeyboard(unsigned char key, int x, int y)
 		exit(0);
 		break;
 	case 'z':
-	case 'Z':
-		// switch to the previous model
 		cur_idx = (cur_idx + filenames.size() - 1) % filenames.size();
-		cout << "Switch to model " << cur_idx << endl;
 		break;
 	case 'x':
-	case 'X':
-
-		// switch to the next model
 		cur_idx = (cur_idx + 1) % filenames.size();
-		cout << "Switch to model " << cur_idx << endl;
-
-		break;
-
-	case 'h':
-	case 'H':
-		// show help menu
-		printf("----------Instruction Manual----------\n");
-		cout << "1:Type 'q' 'w' 'e' to toggle light to source to Direction, Point, and Spot light source" << endl;
-		cout << "1.1: Different light source can exist at the same time"<<endl;
-		cout << "2:Type 'a' 's' 'd' to toggle lighting parameter to Ambient, Diffuse, and specular  " << endl;
-		cout << "2.1: Different lighting parameter can exist at the same time" << endl;
-		cout << "3:Type 'z' 'x' to switch models " << endl;
-		cout << "4:Type 'r' to  determine whether the model rotate or not " << endl;
-		printf("-----------Instruction Manual---------\n");
 		break;
 	case 'q':
-	case 'Q':
-		//directionalOn = (directionalOn + 1) % 2;
-
-		directionalOn = (directionalOn == 1) ? 0 : 1;
-
-		printf("Turn %s directional light\n", directionalOn ? "ON" : "OFF");
+		light_idx = 0;
 		printStatus();
+
 		break;
-	case 'W':
 	case 'w':
-		//pointOn = (pointOn + 1) % 2;
-
-		pointOn = (pointOn == 1) ? 0 : 1;
-
-		printf("Turn %s point light\n", pointOn ? "ON" : "OFF");
+		light_idx = 1;
 		printStatus();
+
 		break;
 	case 'e':
-	case 'E':
-		spotOn = (spotOn == 1) ? 0 : 1;;
-		printf("Turn %s spot light\n", spotOn ? "ON" : "OFF");
+		light_idx = 2;
 		printStatus();
+
 		break;
 	case 'a':
-	case 'A':
-		ambientOn = (ambientOn == 1) ? 0 : 1;
-		printf("Turn %s ambient effect\n", ambientOn ? "ON" : "OFF");
+		enableAmbient = !enableAmbient;
+		cout << "Ambient On" << endl;
 		printStatus();
 		break;
 	case 's':
-	case 'S':		
-		diffuseOn = (diffuseOn == 1) ? 0 : 1;
-		printf("Turn %s diffuse effect\n", diffuseOn ? "ON" : "OFF");
+		enableDiffuse = !enableDiffuse;
+		cout << "Diffuse On" << endl;
 		printStatus();
+
 		break;
 	case 'd':
-	case 'D':
-		specularOn = (specularOn == 1) ? 0 : 1;
-		printf("Turn %s specular effect\n", specularOn ? "ON" : "OFF");
+		enableSpecular = !enableSpecular;
+		cout << "Specular  On" << endl;
 		printStatus();
+
+		break;
+	case 'c':
+		break;
+	case 'u':
+		break;
+	case 'i':
+		break;
+	case 't':
 		break;
 	case 'r':
-	case 'R':
 		isRotate = !isRotate;
-		printf("Turn %s auto rotate\n", isRotate ? "ON" : "OFF");
 		break;
-
-
-	case 'f':
-	case 'F':
-
-		perPixelOn = (perPixelOn == 1) ? 0 : 1;
-
-		(perPixelOn==0)? printf("switch to vertex lighting\n"): printf("switch to per pixel lighting\n");
-
-		break;
-
-	case 'i':
-
-		cout << "-------------developer only-------------" << endl;
-		/*
-		
-		GLint iLocPosition;
-		GLint iLocNormal;
-		GLint iLocMVP;
-
-		GLint iLocMDiffuse, iLocMAmbient, iLocMSpecular, iLocMShininess;
-		GLint iLocAmbientOn, iLocDiffuseOn, iLocSpecularOn;
-		GLint iLocDirectionalOn, iLocPointOn, iLocSpotOn;
-		GLint iLocNormalTransform, iLocModelTransform, iLocViewTransform;
-		GLint iLocEyePosition;
-		GLint iLocPointPosition, iLocSpotPosition, iLocSpotExponent, iLocSpotCutoff, iLocSpotCosCutoff;
-		GLint iLocPerPixelLighting;
-		*/
-		cout << "iLocPosition: " << iLocPosition << endl;
-		cout << "iLocNormal: " << iLocNormal << endl;
-		cout << "iLocMVP: " << iLocMVP << endl;
-		cout << "iLocMDiffuse: " << iLocMDiffuse << endl;
-		cout << "iLocMAmbient: " << iLocMAmbient << endl;
-		cout << "iLocMSpecular: " << iLocMSpecular << endl;
-		cout << "iLocMShininess: " << iLocMShininess << endl;
-		cout << "iLocAmbientOn: " << iLocAmbientOn << endl;
-		cout << "iLocDiffuseOn: " << iLocDiffuseOn << endl;
-		cout << "iLocSpecularOn: " << iLocSpecularOn << endl;
-
-
-		break;
-	case 'p':
-		crazy_speed = !crazy_speed;
-		break;
-
 	}
-
-
-	//printf("\n");
+	printf("\n");
 }
 
 void onKeyboardSpecial(int key, int x, int y) {
 	//printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
-
-	//move the directioal light position
 	switch (key)
 	{
 	case GLUT_KEY_LEFT:
-		//printf("key: LEFT ARROW");
-		if (pointOn == 1) {
-			lightsource[2].position[0] -= 0.2;
+	//	printf("key: LEFT ARROW");
+		if (light_idx == 1) {
+			(lightInfo[1].position.x) -= 0.2;
 		}
+
 		break;
 
 	case GLUT_KEY_RIGHT:
-		//printf("key: RIGHT ARROW");
-		if (pointOn == 1) {
-			lightsource[2].position[0] += 0.2;
+	//	printf("key: RIGHT ARROW");
+		if (light_idx == 1) {
+			(lightInfo[1].position.x) += 0.2;
 		}
 		break;
 	case GLUT_KEY_UP:
-		if (pointOn == 1) {
-			lightsource[2].position[1] += 0.2;
+		if (light_idx == 1) {
+			(lightInfo[1].position.y) += 0.2;
 		}
 		break;
 	case GLUT_KEY_DOWN:
-		if (pointOn == 1) {
-			lightsource[2].position[1] -= 0.2;
+		if (light_idx == 1) {
+			(lightInfo[1].position.y) -= 0.2;
 		}
 		break;
+
+
 	default:
-		//printf("key: 0x%02X      ", key);
+		printf("key: 0x%02X      ", key);
 		break;
 	}
-	//printf("\n");
+	printf("\n");
 }
-
 
 void onWindowReshape(int width, int height)
 {
 	printf("%18s(): %dx%d\n", __FUNCTION__, width, height);
-	proj.aspect = width / height;
 }
 
 void initParameter()
 {
-	proj.left = -1;
-	proj.right = 1;
-	proj.top = 1;
-	proj.bottom = -1;
-	proj.nearClip = 1.0;
-	proj.farClip = 10.0;
-	proj.fovy = 60;
+	Frustum frustum;
+	Vector3 eyePosition = Vector3(0.0f, 0.0f, 2.0f);
+	Vector3 centerPosition = Vector3(0.0f, 0.0f, 0.0f);
+	Vector3 upVector = Vector3(0.0f, 1.0f, 0.0f);
 
-	main_camera.position = Vector3(0.0f, 0.0f, 2.0f);
-	main_camera.center = Vector3(0.0f, 0.0f, 0.0f);
-	main_camera.up_vector = Vector3(0.0f, 1.0f, 0.0f);
+	frustum.left = -1.0f;	frustum.right = 1.0f;
+	frustum.top = 1.0f;	frustum.bottom = -1.0f;
+	frustum.cnear = 0.1f;	frustum.cfar = 3.0f;
 
-	setViewingMatrix();
-	setOrthogonal();	//set default projection matrix as orthogonal matrix
+	V = myViewingMatrix(eyePosition, centerPosition, upVector);
+	P = myOrthogonal(frustum);
 
+	lightInfo[0].position = Vector4(3.0f , 3.0f, 3.0f, 0.0f);
+	lightInfo[0].ambient = Vector4(0.15f, 0.15f, 0.15f, 1.0f);
+	lightInfo[0].diffuse = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	lightInfo[0].specular = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 
-	//Hw2
+	lightInfo[1].position = Vector4(0.0f, -2.0f, 0.0f, 1.0f);
+	lightInfo[1].ambient = Vector4(0.15f, 0.15f, 0.15f, 1.0f);
+	lightInfo[1].diffuse = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	lightInfo[1].specular = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	lightInfo[1].constantAttenuation = 0.03;
+	lightInfo[1].linearAttenuation = 0.3;
+	lightInfo[1].quadraticAttenuation = 0.6f;
 
-						  // 0: Ambient
-	lightsource[0].position[0] = 0;
-	lightsource[0].position[1] = 0;
-	lightsource[0].position[2] = -1;
-	lightsource[0].position[3] = 1;
-	lightsource[0].ambient[0] = 0.75;
-	lightsource[0].ambient[1] = 0.75;
-	lightsource[0].ambient[2] = 0.75;
-	lightsource[0].ambient[3] = 1;
-
-	// 1: directional light
-	lightsource[1].position[0] = -1;
-	lightsource[1].position[1] = 1;
-	lightsource[1].position[2] = 1;
-	lightsource[1].position[3] = 1;
-	lightsource[1].ambient[0] = 0.15;
-	lightsource[1].ambient[1] = 0.15;
-	lightsource[1].ambient[2] = 0.15;
-	lightsource[1].ambient[3] = 1.0;
-	lightsource[1].diffuse[0] = 1.0;
-	lightsource[1].diffuse[1] = 1.0;
-	lightsource[1].diffuse[2] = 1.0;
-	lightsource[1].diffuse[3] = 1;
-	lightsource[1].specular[0] = 1;
-	lightsource[1].specular[1] = 1;
-	lightsource[1].specular[2] = 1;
-	lightsource[1].specular[3] = 1;
-	lightsource[1].constantAttenuation = 0.05;
-	lightsource[1].linearAttenuation = 0.3;
-	lightsource[1].quadraticAttenuation = 0.6;
-
-	// 2: point light
-	lightsource[2].position[0] = 0;
-	lightsource[2].position[1] = -1;
-	lightsource[2].position[2] = 0;
-	lightsource[2].position[3] = 1;
-	lightsource[2].ambient[0] = 0.15;
-	lightsource[2].ambient[1] = 0.15;
-	lightsource[2].ambient[2] = 0.15;
-	lightsource[2].ambient[3] = 1.0;
-	lightsource[2].diffuse[0] = 1;
-	lightsource[2].diffuse[1] = 1;
-	lightsource[2].diffuse[2] = 1;
-	lightsource[2].diffuse[3] = 1;
-	lightsource[2].specular[0] = 1;
-	lightsource[2].specular[1] = 1;
-	lightsource[2].specular[2] = 1;
-	lightsource[2].specular[3] = 1;
-	lightsource[2].constantAttenuation = 0.05;
-	lightsource[2].linearAttenuation = 0.3;
-	lightsource[2].quadraticAttenuation = 0.6;
-
-	// 3: spot light
-	lightsource[3].position[0] = 0;
-	lightsource[3].position[1] = 0;
-	lightsource[3].position[2] = 2;
-	lightsource[3].position[3] = 1;
-	lightsource[3].ambient[0] = 0.15;
-	lightsource[3].ambient[1] = 0.15;
-	lightsource[3].ambient[2] = 0.15;
-	lightsource[3].ambient[3] = 1;
-	lightsource[3].diffuse[0] = 1;
-	lightsource[3].diffuse[1] = 1;
-	lightsource[3].diffuse[2] = 1;
-	lightsource[3].diffuse[3] = 1;
-	lightsource[3].specular[0] = 1;
-	lightsource[3].specular[1] = 1;
-	lightsource[3].specular[2] = 1;
-	lightsource[3].specular[3] = 1;
-	lightsource[3].spotDirection[0] = 0;
-	lightsource[3].spotDirection[1] = 0;
-	lightsource[3].spotDirection[2] = -2;
-	lightsource[3].spotExponent = 0.5;
-	lightsource[3].spotCutoff = 45;
-	lightsource[3].spotCosCutoff = 0.99; // 1/12 pi
-	lightsource[3].constantAttenuation = 0.05;
-	lightsource[3].linearAttenuation = 0.3;
-	lightsource[3].quadraticAttenuation = 0.6;
-
-
+	lightInfo[2].position = Vector4(0.0f, 0.0f, 1.5f, 1.0f);
+	lightInfo[2].ambient = Vector4(0.15f, 0.15f, 0.15f, 1.0f);
+	lightInfo[2].diffuse = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	lightInfo[2].specular = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	lightInfo[2].spotDirection = Vector4(0.0f, 0.0f, -2.0f, 0.0f);
+	lightInfo[2].spotExponent = 50;
+	lightInfo[2].spotCosCutoff = 0.99;
+	lightInfo[2].constantAttenuation = 0.05;
+	lightInfo[2].linearAttenuation = 0.3;
+	lightInfo[2].quadraticAttenuation = 0.6f;
 }
 
+void loadConfigFile()
+{
+	ifstream fin;
+	string line;
+	fin.open("../../config.txt", ios::in);
+	if (fin.is_open())
+	{
+		while (getline(fin, line))
+		{
+			filenames.push_back(line);
+		}
+		fin.close();
+	}
+	else
+	{
+		cout << "Unable to open the config file!" << endl;
+	}
+	for (int i = 0; i < filenames.size(); i++)
+		printf("%s\n", filenames[i].c_str());
+}
 
 int main(int argc, char **argv)
 {
-
 	loadConfigFile();
-	initParameter();
-
-
 
 	// glut init
 	glutInit(&argc, argv);
@@ -1174,18 +862,19 @@ int main(int argc, char **argv)
 	// create window
 	glutInitWindowPosition(500, 100);
 	glutInitWindowSize(800, 800);
-
-	glutCreateWindow(" CS550000 CG HW2 103011227");
+	glutCreateWindow("CG HW2");
 
 	glewInit();
-	if (glewIsSupported("GL_VERSION_2_0")) {
-		printf("Ready for OpenGL 2.0\n");
+	if (glewIsSupported("GL_VERSION_4_3")) {
+		printf("Ready for OpenGL 4.3\n");
 	}
 	else {
-		printf("OpenGL 2.0 not supported\n");
+		printf("OpenGL 4.3 not supported\n");
 		system("pause");
 		exit(1);
 	}
+
+	initParameter();
 
 	// load obj models through glm
 	loadOBJModel();
@@ -1197,11 +886,9 @@ int main(int argc, char **argv)
 	glutSpecialFunc(onKeyboardSpecial);
 	glutMouseFunc(onMouse);
 	glutMotionFunc(onMouseMotion);
-	glutPassiveMotionFunc(onPassiveMouseMotion);
 	glutReshapeFunc(onWindowReshape);
 	glutTimerFunc(timeInterval, timerFunc, 0);
-
-	
+	glutPassiveMotionFunc(onPassiveMouseMotion);
 
 	// set up shaders here
 	setShaders();
@@ -1211,9 +898,7 @@ int main(int argc, char **argv)
 	// main loop
 	glutMainLoop();
 
-	// free
-
-	//glmDelete(OBJ);
+	// delete glm objects before exit
 	for (int i = 0; i < filenames.size(); i++)
 	{
 		glmDelete(models[i].obj);

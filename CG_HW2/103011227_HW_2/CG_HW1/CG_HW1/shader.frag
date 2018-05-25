@@ -1,141 +1,122 @@
+#version 430
 
+in vec3 f_vertexInView;
+in vec3 f_normalInView;
 
-struct LightSourceParameters {
-	vec4 ambient;
-	vec4 diffuse;
-	vec4 specular;
+out vec4 fragColor;
+
+struct LightInfo{
 	vec4 position;
-	vec4 halfVector;
-	vec3 spotDirection;
+	vec4 spotDirection;
+	vec4 La;			// Ambient light intensity
+	vec4 Ld;			// Diffuse light intensity
+	vec4 Ls;			// Specular light intensity
 	float spotExponent;
-	float spotCutoff; // (range: [0.0f,90.0f], 180.0f)
-	float spotCosCutoff; // (range: [1.0f,0.0f],-1.0f)
+	float spotCosCutoff;
 	float constantAttenuation;
 	float linearAttenuation;
 	float quadraticAttenuation;
 };
 
-struct MaterialParameters {
-	vec4 ambient;
-	vec4 diffuse;
-	vec4 specular;
+struct MaterialInfo
+{
+	vec4 Ka;
+	vec4 Kd;
+	vec4 Ks;
 	float shininess;
 };
 
-uniform MaterialParameters Material;
-uniform LightSourceParameters LightSource[4];
-uniform int ambientOn;
-uniform int diffuseOn;
-uniform int specularOn;
-uniform int directionalOn;
-uniform int pointOn;
-uniform int spotOn;
-uniform int perPixelOn;
+uniform int lightIdx;			// Use this variable to contrl lighting mode
+uniform mat4 um4v;				// Camera viewing transformation matrix
+uniform LightInfo light[3];
+uniform MaterialInfo material;
 
-varying vec4 vv4color;
-varying vec4 vv4position;
-varying vec3 N;
-varying vec3 V;
+vec4 directionalLight(vec3 N, vec3 V){
 
-vec4 getDirectionalLight(LightSourceParameters lightSource){
-	vec4 color = vec4(0.0f,0.0f,0.0f,0.0f);
-	vec3 L = normalize(lightSource.position.xyz-vv4position.xyz);
+	vec4 lightInView = um4v * light[0].position;	// the position of the light in camera space
+	vec3 S = normalize(lightInView.xyz);			// Normalized lightInView
+	vec3 H = normalize(S + V);						// Half vector
 
-	// angle between L and N must less than 90
-	if(diffuseOn == 1 && dot(L,N)>=0){
-		vec4 diffuse = lightSource.diffuse * Material.diffuse * dot(L,N);
-		diffuse = clamp(diffuse,0.0f,1.0f);
-		color += diffuse;
-	}
+	// [TODO] calculate diffuse coefficient and specular coefficient here
+	float dc = ( dot(S,N)) ;
+	float sc = ( pow(max(dot(N, H), 0), 64.0f) );
 
-	if(specularOn == 1){
-		vec3 H= normalize(L+V);
-		if(dot(N,H)>0){
-			float spec=pow(dot(N,H),64.0f);
-			vec4 specular = Material.specular * lightSource.specular * spec;
-			specular = clamp(specular,0.0f,1.0f);
-			color += specular;
-		}
-
-	}
-
-	return color;
+	return light[0].La * material.Ka + dc * light[0].Ld * material.Kd + sc * light[0].Ls * material.Ks;
 }
 
-vec4 getPointLight(LightSourceParameters lightSource){
-	vec4 color = vec4(0.0f,0.0f,0.0f,0.0f);
-	float distance = length(lightSource.position.xyz-vv4position.xyz);
-	float fatt = 1.0f/(lightSource.constantAttenuation + lightSource.linearAttenuation * distance + lightSource.quadraticAttenuation * distance * distance);
-	vec3 L = normalize(lightSource.position.xyz-vv4position.xyz);
+vec4 pointLight(vec3 N, vec3 V){
 
-	if(diffuseOn == 1 && dot(L,N)>=0 ){
-		vec4 diffuse = lightSource.diffuse * Material.diffuse * dot(L,N);
-		diffuse *= fatt;
-		diffuse = clamp(diffuse,0.0f,1.0f);
-		color += diffuse;
-	}
-	if(specularOn == 1){
+	// [TODO] Calculate point light intensity here
+	
+	vec4 lightInView = um4v * light[1].position;	// the position of the light in camera space
+	vec3 L=normalize(lightInView.xyz-f_vertexInView);
+	float distance = length(lightInView.xyz-f_vertexInView);
+	float fatt = 1.0f/(light[1].constantAttenuation + light[1].linearAttenuation * distance + light[1].quadraticAttenuation * distance * distance);
 
-		vec3 H= normalize(L+V);
-		if(dot(N,H)>0){
-			float spec=pow(dot(N,H),64.0f);
-			vec4 specular = Material.specular * lightSource.specular * spec;
-			specular *= fatt;
-			specular = clamp(specular,0.0f,1.0f);
-			color += specular;
-		}		
-	}
+	vec3 H = normalize(L + V);						// Half vector
 
-	return color;
+	float dc = clamp( dot(L,N)*fatt, 0.0f,1.0f) ;
+	float sc = clamp( pow(max(dot(N, H), 0), 64.0f)*fatt, 0.0f,1.0f );
+
+	return light[1].La * material.Ka*fatt + dc * light[1].Ld * material.Kd + sc * light[1].Ls * material.Ks;
+
+
+
 }
 
-vec4 getSpotLight(LightSourceParameters lightSource){
-	vec4 color = vec4(0.0f,0.0f,0.0f,0.0f);
-	float distance = length(lightSource.position.xyz-vv4position.xyz);
-	vec3 L = normalize(lightSource.position.xyz-vv4position.xyz);
-	float cos_theta = dot(L,normalize(-lightSource.spotDirection));
-	float effect = pow(max(dot(L,-lightSource.spotDirection),0.0f),lightSource.spotExponent);
-	float fatt = 1.0f/(lightSource.constantAttenuation + lightSource.linearAttenuation * distance + lightSource.quadraticAttenuation * distance * distance);
+vec4 spotLight(vec3 N, vec3 V){
+	
+	//[TODO] Calculate spot light intensity here
+	vec4 lightInView = um4v * light[2].position;	// the position of the light in camera space
+	vec3 spot_dir= ( um4v * light[2].spotDirection).xyz;
+	float distance = length(lightInView.xyz-f_vertexInView);
+	float fatt = 1.0f/(light[2].constantAttenuation + light[2].linearAttenuation * distance + light[2].quadraticAttenuation * distance * distance);
+	
+	vec3 L =normalize(lightInView.xyz-f_vertexInView);
+	vec3 H = normalize(L + V);						// Half vector
 
 
-	if(cos_theta >= lightSource.spotCosCutoff){
-		if(diffuseOn == 1 && dot(L,N)>=0 ){
-			vec4 diffuse = lightSource.diffuse * Material.diffuse * dot(L,N);
-			diffuse *= effect;
-			diffuse *=fatt;
-			diffuse = clamp(diffuse,0.0f,1.0f);
-			color += diffuse;
-		}
-		if(specularOn == 1){
 
-			
-			vec3 H= normalize(L+V);
-			float spec=pow(max( dot(N,H),0.0f ) ,64.0f );
-			vec4 specular = Material.specular * lightSource.specular * spec;
-			specular *=effect;
-			specular *= fatt;
-			specular = clamp(specular,0.0f,1.0f);
-			color += specular;
+	float cos_theta = dot( L , normalize(-spot_dir.xyz) );
+	float effect = pow(max(cos_theta,0.0f),light[2].spotExponent);
 
-		}
+
+	float dc = 0;
+	float sc =0;
+
+	if (cos_theta >= light[2].spotCosCutoff ){
+			 dc =( dot(L,N)*fatt*effect );
+			 sc = (  pow(max(dot(N, H), 0), 64.0f)*fatt*effect) ;
+	
 	}
-	return color;
-}
+	
 
+	return light[2].La * material.Ka*effect*fatt + dc * light[2].Ld * material.Kd + sc * light[2].Ls * material.Ks;
+
+	
+
+}
 
 void main() {
-	if(perPixelOn == 1){
-		vec4 color = vec4(0.0f,0.0f,0.0f,0.0f);
-		if(ambientOn == 1){
-			vec4 vv4ambient_D = Material.ambient * LightSource[0].ambient;
-			color += vv4ambient_D;
-		}
-		
-		color+=(directionalOn==1)?getDirectionalLight(LightSource[1]):0;
-		color+=(pointOn==1)?getPointLight(LightSource[2]):0;
-		color+=(spotOn==1)?getSpotLight(LightSource[3]):0;
-		gl_FragColor = color;
-	}else{
-		gl_FragColor = vv4color;
+
+	vec3 N = normalize(f_normalInView);		// N represents normalized normal of the model in camera space
+	vec3 V = normalize(-f_vertexInView);	// V represents the vector from the vertex of the model to the camera position
+	
+	vec4 color = vec4(0, 0, 0, 0);
+
+	// Handle lighting mode
+	if(lightIdx == 0)
+	{
+		color += directionalLight(N, V);
 	}
+	else if(lightIdx == 1)
+	{
+		color += pointLight(N, V);
+	}
+	else if(lightIdx == 2)
+	{
+		color += spotLight(N ,V);
+	}
+
+	fragColor = color;
 }
