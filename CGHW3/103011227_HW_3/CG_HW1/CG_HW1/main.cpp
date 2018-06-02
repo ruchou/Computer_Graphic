@@ -259,12 +259,12 @@ void traverseColorModel(Model &m)
 	while (group)
 	{
 		// If there exist material in this group
-		if(strlen(m.obj->materials[group->material].textureImageName) != 0)
+		if (strlen(m.obj->materials[group->material].textureImageName) != 0)
 		{
 			string texName = "../../../TextureModels/" + string(m.obj->materials[group->material].textureImageName);
 
 			cout << texName << endl;
-			
+
 			unsigned long size;
 			FILE *f = fopen(texName.c_str(), "rb");
 			fread(&m.group[curGroupIdx].fileHeader, sizeof(FileHeader), 1, f);
@@ -279,6 +279,28 @@ void traverseColorModel(Model &m)
 			// glBindTexture(GL_TEXTURE_2D, ?);
 			// glTexImage2D(GL_TEXTURE_2D, ?, ?, ?, ?, ?, GL_BGR, ?, ?);
 			// glGenerateMipMap(?);
+			glGenTextures(1, &m.group[curGroupIdx].texNum);
+			glBindTexture(GL_TEXTURE_2D, m.group[curGroupIdx].texNum);
+			glTexImage2D(GL_TEXTURE_2D,
+				0,
+				GL_RGB,
+				m.group[curGroupIdx].infoHeader.Width,
+				m.group[curGroupIdx].infoHeader.Height,
+				0,
+				GL_BGR,
+				GL_UNSIGNED_BYTE,
+				m.group[curGroupIdx].image
+			);
+			/*
+			GL_RGB表示顏色由三個分量構成，GL_BGR則說明了顏色在內存中的存儲格式。實際上，BMP存儲的並不是RGB，而是BGR，因此得把這個告訴OpenGL的。
+			*/
+
+			glGenerateMipmap(GL_TEXTURE_2D);
+
+
+	
+
+		}
 
 		m.group[curGroupIdx].vertices = new GLfloat[group->numtriangles * 9];
 		m.group[curGroupIdx].texcoords = new GLfloat[group->numtriangles * 6];
@@ -354,23 +376,34 @@ void handleTexParameter()
 {
 	if(mag_linear)
 		//glTexParameteri(GL_TEXTURE_2D, ?, ?);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	else
 		//glTexParameteri(GL_TEXTURE_2D, ?, ?);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
 
 	if(min_linear)
 		//glTexParameteri(GL_TEXTURE_2D, ?, ?);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
 	else
 		//glTexParameteri(GL_TEXTURE_2D, ?, ?);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
 
 	if (warp_clamp)
 	{
 		//glTexParameteri(GL_TEXTURE_2D, ?, ?);
 		//glTexParameteri(GL_TEXTURE_2D, ?, ?);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	}
 	else
 	{
 		//glTexParameteri(GL_TEXTURE_2D, ?, ?);
 		//glTexParameteri(GL_TEXTURE_2D, ?, ?);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	}
 }
 
@@ -588,6 +621,21 @@ float radian2deg(float radian)
 	return radian*180.0f / PI;
 }
 
+void printStatus() {
+	/*
+	
+bool mag_linear = true;
+bool min_linear = true;
+bool warp_clamp = true;
+	*/
+	cout << "f: Mag linear = "<< mag_linear << endl;
+	cout << "g: Min linear = " << min_linear << endl;
+	cout << "h: warp clamp = " << warp_clamp << endl;
+
+
+
+}
+
 void onMouse(int who, int state, int x, int y)
 {
 	printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
@@ -626,6 +674,7 @@ void onMouseMotion(int x, int y)
 	last_x = x;
 	last_y = y;
 }
+
 
 void onKeyboard(unsigned char key, int x, int y)
 {
@@ -676,6 +725,7 @@ void onKeyboard(unsigned char key, int x, int y)
 			break;
 	}
 	printf("\n");
+	printStatus();
 }
 
 void onKeyboardSpecial(int key, int x, int y) {
@@ -684,10 +734,20 @@ void onKeyboardSpecial(int key, int x, int y) {
 	{
 	case GLUT_KEY_LEFT:
 		printf("key: LEFT ARROW");
+		moveCameraLeft();
 		break;
 
 	case GLUT_KEY_RIGHT:
 		printf("key: RIGHT ARROW");
+		moveCameraRight();
+		break;
+	case GLUT_KEY_UP:
+		printf("key: UP ARROW");
+		moveCameraForward();
+		break;
+	case GLUT_KEY_DOWN:
+		printf("key: DOWN ARROW");
+		moveCameraBackward();
 		break;
 
 	default:
